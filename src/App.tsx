@@ -4,14 +4,16 @@ import Dashboard from './pages/Dashboard'
 import Builder from './pages/Builder'
 import FillForm from './pages/FillForm'
 import Responses from './pages/Responses'
+import NotFound from './pages/NotFound'
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/builder/:id" element={<Builder />} />
-      <Route path="/f/:id" element={<FillForm />} />
+      <Route path="/"              element={<Dashboard />} />
+      <Route path="/builder/:id"   element={<Builder />} />
+      <Route path="/f/:id"         element={<FillForm />} />
       <Route path="/responses/:id" element={<Responses />} />
+      <Route path="*"              element={<NotFound />} />
     </Routes>
   )
 }

@@ -227,22 +227,24 @@ export default function FillForm() {
           {/* Error message */}
           {submitError && (
             <div style={{
-              background: 'rgba(192,57,43,0.06)',
+              background: 'rgba(192,57,43,0.05)',
               border: '1px solid rgba(192,57,43,0.2)',
               borderLeft: '3px solid var(--danger)',
               borderRadius: 'var(--r)',
-              padding: '12px 16px',
+              padding: '14px 16px',
               marginBottom: 16,
             }}>
-              <div style={{ fontSize:12, fontFamily:'var(--font-head)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--danger)', marginBottom:4 }}>
+              <div style={{ fontSize:11, fontFamily:'var(--font-head)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.6px', color:'var(--danger)', marginBottom:6 }}>
                 Submission Error
               </div>
-              <p style={{ color:'var(--danger)', fontSize:13, lineHeight:1.6 }}>{submitError}</p>
-              {submitError.includes('API key') && (
-                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
-                  style={{ fontSize:12, color:'var(--orange)', display:'block', marginTop:8, fontFamily:'var(--font-mono)' }}>
-                  → Get a new API key at aistudio.google.com/apikey
-                </a>
+              <p style={{ color:'var(--text2)', fontSize:13, lineHeight:1.7, whiteSpace:'pre-line' }}>{submitError}</p>
+              {(submitError.includes('API key') || submitError.includes('flagged') || submitError.includes('Settings')) && (
+                <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap' }}>
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
+                    style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'6px 12px', background:'var(--orange)', color:'white', borderRadius:'var(--r)', fontSize:12, fontFamily:'var(--font-head)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.4px', textDecoration:'none' }}>
+                    ↗ Get New API Key
+                  </a>
+                </div>
               )}
             </div>
           )}

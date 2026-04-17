@@ -4,7 +4,7 @@ import { supabase, StratForm, FormField } from '../lib/supabase'
 import { analyzeWithGemini } from '../lib/gemini'
 import { downloadText } from '../lib/utils'
 import Topbar from '../components/Topbar'
-import { IconSparkle, IconDownload, IconArrow } from '../components/Icons'
+import { IconSparkle, IconDownload } from '../components/Icons'
 
 export default function FillForm() {
   const { id } = useParams<{ id: string }>()
@@ -15,7 +15,6 @@ export default function FillForm() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [analyzing, setAnalyzing] = useState(false)
   const [result, setResult] = useState<string | null>(null)
-  const [responseId, setResponseId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState('')
 
   useEffect(() => { if (id) loadForm(id) }, [id])
@@ -34,22 +33,17 @@ export default function FillForm() {
   async function handleSubmit() {
     if (!form) return
     const newErrors: Record<string, string> = {}
-    form.fields.forEach(f => {
-      if (f.required && !fillData[f.id]?.trim()) newErrors[f.id] = 'This field is required'
-    })
+    form.fields.forEach(f => { if (f.required && !fillData[f.id]?.trim()) newErrors[f.id] = 'Required' })
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
-    setAnalyzing(true)
-    setSubmitError('')
+    setAnalyzing(true); setSubmitError('')
     try {
       const fields = form.fields.map(f => ({ label: f.label || f.type, value: fillData[f.id] || '' }))
       const report = await analyzeWithGemini(form.title, fields, form.ai_instructions)
       const respondentEmail = fillData[form.fields.find(f => f.type === 'email')?.id || ''] || ''
-      const { data: saved } = await supabase.from('strat_responses').insert({
+      await supabase.from('strat_responses').insert({
         form_id: form.id, form_title: form.title,
-        response_data: fillData, ai_report: report,
-        respondent_email: respondentEmail
-      }).select('id').single()
-      if (saved) setResponseId(saved.id)
+        response_data: fillData, ai_report: report, respondent_email: respondentEmail
+      })
       setResult(report)
     } catch (e) {
       setSubmitError('Analysis failed. Please try again.')
@@ -57,17 +51,17 @@ export default function FillForm() {
     setAnalyzing(false)
   }
 
-  const pct = form ? Math.min(100, Math.round(Object.keys(fillData).filter(k => fillData[k]).length / Math.max(form.fields.length, 1) * 100)) : 0
+  const filled = form ? Object.keys(fillData).filter(k => fillData[k]).length : 0
+  const pct = form && form.fields.length > 0 ? Math.min(100, Math.round(filled / form.fields.length * 100)) : 0
 
   if (notFound) return (
-    <div className="app">
-      <Topbar />
+    <div className="app"><Topbar />
       <div className="main">
-        <div className="form-view" style={{ textAlign: 'center', paddingTop: 60 }}>
-          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>⬡</div>
-          <h2 style={{ fontFamily: 'var(--font-head)', marginBottom: 8 }}>Form not found</h2>
-          <p style={{ color: 'var(--text2)', marginBottom: 20 }}>This form may not exist or is not published.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/')}>Go home</button>
+        <div className="form-view" style={{ textAlign:'center', paddingTop:60 }}>
+          <div style={{ fontSize:36, marginBottom:16, opacity:0.2, fontFamily:'var(--font-head)' }}>◈</div>
+          <h2 style={{ fontFamily:'var(--font-head)', fontSize:18, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Form Not Found</h2>
+          <p style={{ color:'var(--text2)', marginBottom:20, fontSize:13 }}>This form doesn't exist or isn't published.</p>
+          <button className="btn btn-primary" onClick={() => navigate('/')}>Go Home</button>
         </div>
       </div>
     </div>
@@ -75,57 +69,110 @@ export default function FillForm() {
 
   if (!form) return (
     <div className="app"><Topbar />
-      <div className="main" style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text3)' }}>
+      <div className="main" style={{ display:'flex', alignItems:'center', gap:10, color:'var(--text3)' }}>
         <div className="spinner" /> Loading form…
       </div>
     </div>
   )
 
+  /* ── Result view ── */
   if (result) return (
     <div className="app">
-      <Topbar right={<span className="badge badge-ai"><IconSparkle /> AI Analysis</span>} />
+      <Topbar right={<span className="badge badge-ai"><IconSparkle /> Gemini AI</span>} />
       <div className="main">
         <div className="form-view fade-up">
-          <div style={{ textAlign: 'center', padding: '20px 0 32px' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>✦</div>
-            <h2 style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Analysis Complete</h2>
-            <p style={{ color: 'var(--text2)', fontSize: 14 }}>Here's your personalised brief from Gemini AI</p>
+          {/* Success header */}
+          <div style={{ textAlign:'center', padding:'24px 0 32px' }}>
+            <div style={{
+              width:48, height:48, background:'var(--orange)', borderRadius:8,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              margin:'0 auto 14px', fontSize:20
+            }}>✦</div>
+            <div className="eyebrow" style={{ marginBottom:6 }}>Analysis Complete</div>
+            <h2 style={{ fontFamily:'var(--font-head)', fontSize:20, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.02em', marginBottom:6 }}>
+              Your Intelligence Brief
+            </h2>
+            <p style={{ color:'var(--text2)', fontSize:13 }}>Generated by Gemini AI · {form.title}</p>
           </div>
+
           <div className="result-card">
             <div className="result-header">
-              <span className="badge badge-ai"><IconSparkle /> Gemini AI Analysis</span>
-              <span style={{ fontSize: 12, color: 'var(--text3)', marginLeft: 'auto' }}>{form.title}</span>
+              <span className="badge badge-ai"><IconSparkle /> Gemini 1.5 Flash</span>
+              <span style={{ fontSize:11, color:'var(--text3)', marginLeft:'auto', fontFamily:'var(--font-mono)' }}>
+                {new Date().toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
+              </span>
             </div>
             <div className="result-content">{result}</div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+
+          <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:16 }}>
             <button className="btn" onClick={() => downloadText(
-              `StratIntel AI Analysis Report\n${'='.repeat(42)}\nForm: ${form.title}\nDate: ${new Date().toLocaleString()}\n\n${result}`,
-              `stratintel-report-${Date.now()}.txt`
+              `STRATINTEL — AI ANALYSIS REPORT\n${'═'.repeat(42)}\nForm: ${form.title}\nDate: ${new Date().toLocaleString()}\n\n${result}`,
+              `stratintel-${form.id.slice(0,6)}-${Date.now()}.txt`
             )}><IconDownload /> Download Report</button>
-            <button className="btn btn-ghost" onClick={() => { setResult(null); setFillData({}); setResponseId(null) }}>Fill Again</button>
+            <button className="btn btn-ghost" onClick={() => { setResult(null); setFillData({}) }}>
+              Submit Again
+            </button>
           </div>
         </div>
       </div>
     </div>
   )
 
+  /* ── Analyzing overlay ── */
+  if (analyzing) return (
+    <div className="app"><Topbar />
+      <div className="main">
+        <div className="form-view" style={{ textAlign:'center', paddingTop:80 }}>
+          <div style={{
+            width:52, height:52, borderRadius:8,
+            background:'var(--orange-lt)', border:'2px solid var(--orange)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            margin:'0 auto 20px', fontSize:22
+          }}>✦</div>
+          <div className="eyebrow" style={{ marginBottom:8 }}>Processing</div>
+          <h2 style={{ fontFamily:'var(--font-head)', fontSize:18, textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8 }}>
+            Gemini is Analysing
+          </h2>
+          <p style={{ color:'var(--text2)', fontSize:13, marginBottom:24 }}>Building your intelligence brief…</p>
+          <div className="spinner" style={{ width:24, height:24, borderWidth:3, margin:'0 auto' }} />
+        </div>
+      </div>
+    </div>
+  )
+
+  /* ── Fill form ── */
   return (
     <div className="app">
       <Topbar right={<span className="badge badge-ai"><IconSparkle /> AI-Powered</span>} />
       <div className="main">
         <div className="form-view fade-up">
-          <div className="progress-bar"><div className="progress-fill" style={{ width: `${pct}%` }} /></div>
+          <div className="progress-bar"><div className="progress-fill" style={{ width:`${pct}%` }} /></div>
           <div className="form-view-header">
             <h1 className="form-view-title">{form.title}</h1>
             {form.description && <p className="form-view-desc">{form.description}</p>}
           </div>
-          {form.fields.map(f => <FieldRenderer key={f.id} field={f} value={fillData[f.id] || ''} error={errors[f.id]} onChange={v => updateField(f.id, v)} />)}
-          {submitError && <p style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12 }}>{submitError}</p>}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-            <button className="btn btn-primary" onClick={handleSubmit} disabled={analyzing} style={{ minWidth: 160 }}>
-              {analyzing ? <><div className="spinner" /> Analyzing…</> : <><IconSparkle /> Submit & Analyse</>}
+
+          {form.fields.map(f => (
+            <FieldRenderer key={f.id} field={f} value={fillData[f.id]||''} error={errors[f.id]} onChange={v => updateField(f.id, v)} />
+          ))}
+
+          {submitError && (
+            <p style={{ color:'var(--danger)', fontSize:13, marginBottom:12, fontFamily:'var(--font-mono)' }}>{submitError}</p>
+          )}
+
+          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:28 }}>
+            <button className="btn btn-primary" onClick={handleSubmit} disabled={analyzing} style={{ minWidth:180 }}>
+              <IconSparkle /> Submit & Analyse
             </button>
+          </div>
+
+          {/* Footer */}
+          <div style={{ marginTop:40, paddingTop:20, borderTop:'1px solid var(--border)', display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ width:18, height:18, background:'var(--orange)', borderRadius:3, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'white', fontWeight:800, fontFamily:'var(--font-head)' }}>S</div>
+            <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--font-head)', textTransform:'uppercase', letterSpacing:'0.5px' }}>
+              Powered by StratIntel · stratai.io
+            </span>
           </div>
         </div>
       </div>
@@ -134,24 +181,23 @@ export default function FillForm() {
 }
 
 function FieldRenderer({ field, value, error, onChange }: { field: FormField; value: string; error?: string; onChange: (v: string) => void }) {
-  const typeMap: Record<string, string> = { email: 'email', phone: 'tel', url: 'url', company: 'text', text: 'text' }
+  const typeMap: Record<string, string> = { email:'email', phone:'tel', url:'url', company:'text', text:'text' }
   return (
     <div className="field-group" style={{ marginBottom: 22 }}>
       <label className="field-label">
-        {field.label || 'Field'}
-        {field.required && <span className="req"> *</span>}
+        {field.label || 'Field'}{field.required && <span className="req"> *</span>}
       </label>
       {field.type === 'textarea' ? (
         <textarea className="field-input" value={value} placeholder={field.placeholder} onChange={e => onChange(e.target.value)} />
       ) : field.type === 'choice' ? (
-        <div>{(field.choices || []).map(c => (
-          <div key={c} className={`choice-option ${value === c ? 'selected' : ''}`} onClick={() => onChange(c)}>
-            <input type="radio" name={`field-${field.id}`} checked={value === c} onChange={() => onChange(c)} style={{ accentColor: 'var(--accent)' }} />
+        <div>{(field.choices||[]).map(c => (
+          <div key={c} className={`choice-option ${value===c?'selected':''}`} onClick={() => onChange(c)}>
+            <input type="radio" name={`f-${field.id}`} checked={value===c} onChange={() => onChange(c)} style={{ accentColor:'var(--orange)' }} />
             {c}
           </div>
         ))}</div>
       ) : (
-        <input className="field-input" type={typeMap[field.type] || 'text'} value={value} placeholder={field.placeholder} onChange={e => onChange(e.target.value)} />
+        <input className="field-input" type={typeMap[field.type]||'text'} value={value} placeholder={field.placeholder} onChange={e => onChange(e.target.value)} />
       )}
       {error && <div className="inline-err">{error}</div>}
     </div>

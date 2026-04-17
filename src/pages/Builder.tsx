@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase, StratForm, FormField, FieldType } from '../lib/supabase'
 import { genId, showToast } from '../lib/utils'
 import Topbar from '../components/Topbar'
-import { IconPlus, IconTrash, IconArrow, IconBack, IconCheck, IconSparkle, IconLink, IconEye } from '../components/Icons'
+import { IconPlus, IconTrash, IconArrow, IconBack, IconCheck, IconSparkle, IconEye } from '../components/Icons'
 
 const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: 'text', label: 'Short Text' },
@@ -45,14 +45,12 @@ export default function Builder() {
 
   function updateField(fieldId: string, key: keyof FormField, value: unknown) {
     if (!form) return
-    const fields = form.fields.map(f => f.id === fieldId ? { ...f, [key]: value } : f)
-    save({ fields })
+    save({ fields: form.fields.map(f => f.id === fieldId ? { ...f, [key]: value } : f) })
   }
 
   function addField() {
     if (!form) return
-    const f = newField()
-    f.type = newFieldType
+    const f = newField(); f.type = newFieldType
     save({ fields: [...form.fields, f] })
   }
 
@@ -63,22 +61,16 @@ export default function Builder() {
 
   function addChoice(fieldId: string, choice: string) {
     if (!form || !choice.trim()) return
-    const fields = form.fields.map(f =>
-      f.id === fieldId ? { ...f, choices: [...(f.choices || []), choice.trim()] } : f
-    )
-    save({ fields })
+    save({ fields: form.fields.map(f => f.id === fieldId ? { ...f, choices: [...(f.choices || []), choice.trim()] } : f) })
   }
 
   function removeChoice(fieldId: string, choice: string) {
     if (!form) return
-    const fields = form.fields.map(f =>
-      f.id === fieldId ? { ...f, choices: f.choices.filter(c => c !== choice) } : f
-    )
-    save({ fields })
+    save({ fields: form.fields.map(f => f.id === fieldId ? { ...f, choices: f.choices.filter(c => c !== choice) } : f) })
   }
 
   async function publishForm() {
-    if (!form || form.fields.length === 0) { showToast('Add at least one field before publishing'); return }
+    if (!form || form.fields.length === 0) { showToast('Add at least one field first'); return }
     await save({ published: true })
     showToast('Form is now live!')
     setStep(4)
@@ -91,175 +83,177 @@ export default function Builder() {
 
   function copyLink() {
     navigator.clipboard.writeText(`${window.location.origin}/f/${form?.id}`)
-    showToast('Link copied!')
+    showToast('Link copied')
   }
 
   if (!form) return (
-    <div className="app">
-      <Topbar />
+    <div className="app"><Topbar />
       <div className="main" style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text3)' }}>
-        <div className="spinner" /> Loading form…
+        <div className="spinner" /> Loading…
       </div>
     </div>
   )
 
   const shareUrl = `${window.location.origin}/f/${form.id}`
 
-  const stepBar = (
-    <div className="step-bar">
-      {[{n:1,l:'Details'},{n:2,l:'Fields'},{n:3,l:'AI Setup'},{n:4,l:'Publish'}].map((s, i, arr) => (
-        <React.Fragment key={s.n}>
-          <div className={`step ${step===s.n?'active':step>s.n?'done':''}`} onClick={() => setStep(s.n)}>
-            <div className="step-num">{step > s.n ? <IconCheck /> : s.n}</div>
-            <span>{s.l}</span>
-          </div>
-          {i < arr.length - 1 && <div className="step-line" />}
-        </React.Fragment>
-      ))}
-    </div>
-  )
+  const STEPS = [{n:1,l:'Details'},{n:2,l:'Fields'},{n:3,l:'AI Setup'},{n:4,l:'Publish'}]
 
   return (
     <div className="app">
       <Topbar right={
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {saving && <span style={{ fontSize: 11, color: 'var(--text3)' }}>Saving…</span>}
-          {form.published
-            ? <span className="badge badge-live">● Live</span>
-            : <span className="badge badge-draft">Draft</span>
-          }
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {saving && <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>saving…</span>}
+          <span className={`badge ${form.published ? 'badge-live' : 'badge-draft'}`}>{form.published ? 'Live' : 'Draft'}</span>
         </div>
       } />
       <div className="main">
-        <div style={{ maxWidth: 720, margin: '0 auto' }} className="fade-up">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }} className="fade-up">
+          {/* Back */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
             <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')}><IconBack /> Dashboard</button>
-            <span style={{ fontSize: 12, color: 'var(--text3)' }}>{form.title || 'Untitled Form'}</span>
+            <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
+              {form.title || 'untitled-form'}
+            </span>
           </div>
-          {stepBar}
 
-          {/* Step 1: Details */}
+          {/* Steps */}
+          <div className="step-bar">
+            {STEPS.map((s, i) => (
+              <React.Fragment key={s.n}>
+                <div className={`step ${step===s.n?'active':step>s.n?'done':''}`} onClick={() => setStep(s.n)}>
+                  <div className="step-num">{step > s.n ? <IconCheck /> : s.n}</div>
+                  <span>{s.l}</span>
+                </div>
+                {i < STEPS.length - 1 && <div className="step-line" />}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* ── Step 1: Details ── */}
           {step === 1 && (
             <div className="fade-up">
               <div className="card" style={{ marginBottom: 16 }}>
+                <div className="eyebrow" style={{ marginBottom: 16 }}>Form Details</div>
                 <div className="field-group">
                   <label className="field-label">Form Title <span className="req">*</span></label>
-                  <input className="field-input" defaultValue={form.title} placeholder="e.g. Marketing Strategy Inquiry"
-                    onBlur={e => save({ title: e.target.value })} onChange={e => setForm(f => f ? { ...f, title: e.target.value } : f)} />
+                  <input className="field-input" defaultValue={form.title}
+                    placeholder="e.g. MARKETING STRATEGY INQUIRY"
+                    onBlur={e => save({ title: e.target.value })}
+                    onChange={e => setForm(f => f ? { ...f, title: e.target.value } : f)} />
                 </div>
                 <div className="field-group" style={{ marginBottom: 0 }}>
                   <label className="field-label">Description</label>
-                  <textarea className="field-input" defaultValue={form.description} placeholder="Brief description visible to respondents…"
-                    onBlur={e => save({ description: e.target.value })} onChange={e => setForm(f => f ? { ...f, description: e.target.value } : f)} />
+                  <textarea className="field-input" defaultValue={form.description}
+                    placeholder="Brief description visible to respondents…"
+                    onBlur={e => save({ description: e.target.value })}
+                    onChange={e => setForm(f => f ? { ...f, description: e.target.value } : f)} />
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn btn-primary" onClick={() => setStep(2)}>Next: Build Fields <IconArrow /></button>
+                <button className="btn btn-primary" onClick={() => setStep(2)}>Build Fields <IconArrow /></button>
               </div>
             </div>
           )}
 
-          {/* Step 2: Fields */}
+          {/* ── Step 2: Fields ── */}
           {step === 2 && (
             <div className="fade-up">
               <div className="card" style={{ marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>{form.fields.length} fields</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div className="eyebrow">{form.fields.length} Fields</div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <select className="field-input" style={{ width: 'auto', padding: '5px 10px', fontSize: 12 }}
+                    <select className="field-input" style={{ width: 'auto', padding: '6px 10px', fontSize: 12 }}
                       value={newFieldType} onChange={e => setNewFieldType(e.target.value as FieldType)}>
                       {FIELD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                     <button className="btn btn-primary btn-sm" onClick={addField}><IconPlus /> Add</button>
                   </div>
                 </div>
+
                 {form.fields.length === 0 ? (
                   <div className="empty" style={{ padding: '28px 0' }}>
-                    <div className="empty-icon" style={{ fontSize: 28 }}>⬡</div>
-                    <p style={{ fontSize: 13 }}>No fields yet. Add one above.</p>
+                    <div className="empty-icon">◈</div>
+                    <p style={{ fontSize: 12, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>No fields yet</p>
                   </div>
-                ) : (
-                  form.fields.map(f => (
-                    <div key={f.id} className="field-item">
-                      <div className="field-item-head">
-                        <span style={{ fontSize: 16, color: 'var(--text3)', cursor: 'grab' }}>⠿</span>
-                        <span className="field-type-tag">{FIELD_TYPES.find(t => t.value === f.type)?.label || f.type}</span>
-                        <span style={{ fontSize: 12, color: 'var(--text3)', flex: 1 }}>{f.label || 'Unlabeled field'}</span>
-                        <button className="btn-icon" style={{ color: 'var(--danger)' }} onClick={() => removeField(f.id)}><IconTrash /></button>
-                      </div>
-                      <div className="field-row">
-                        <div className="field-group" style={{ margin: 0 }}>
-                          <label className="field-label">Label</label>
-                          <input className="field-input" defaultValue={f.label} placeholder="Field label"
-                            onBlur={e => updateField(f.id, 'label', e.target.value)} />
-                        </div>
-                        <div className="field-group" style={{ margin: 0 }}>
-                          <label className="field-label">Type</label>
-                          <select className="field-input" value={f.type} onChange={e => updateField(f.id, 'type', e.target.value)}>
-                            {FIELD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="field-row" style={{ marginTop: 8 }}>
-                        <div className="field-group" style={{ margin: 0 }}>
-                          <label className="field-label">Placeholder</label>
-                          <input className="field-input" defaultValue={f.placeholder} placeholder="Hint text…"
-                            onBlur={e => updateField(f.id, 'placeholder', e.target.value)} />
-                        </div>
-                        <div className="field-group" style={{ margin: 0, display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text2)' }}>
-                            <input type="checkbox" checked={f.required} onChange={e => updateField(f.id, 'required', e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
-                            Required
-                          </label>
-                        </div>
-                      </div>
-                      {f.type === 'choice' && (
-                        <div style={{ marginTop: 10 }}>
-                          <label className="field-label">Choices</label>
-                          <ChoiceEditor
-                            choices={f.choices || []}
-                            onAdd={c => addChoice(f.id, c)}
-                            onRemove={c => removeChoice(f.id, c)}
-                          />
-                        </div>
-                      )}
+                ) : form.fields.map(f => (
+                  <div key={f.id} className="field-item">
+                    <div className="field-item-head">
+                      <span className="drag-handle">⠿</span>
+                      <span className="field-type-tag">{FIELD_TYPES.find(t => t.value === f.type)?.label}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text3)', flex: 1, fontFamily: 'var(--font-mono)' }}>
+                        {f.label || 'unlabeled'}
+                      </span>
+                      <button className="btn-icon btn-danger" onClick={() => removeField(f.id)}><IconTrash /></button>
                     </div>
-                  ))
-                )}
+                    <div className="field-row">
+                      <div className="field-group" style={{ margin: 0 }}>
+                        <label className="field-label">Label</label>
+                        <input className="field-input" defaultValue={f.label} placeholder="Field label"
+                          onBlur={e => updateField(f.id, 'label', e.target.value)} />
+                      </div>
+                      <div className="field-group" style={{ margin: 0 }}>
+                        <label className="field-label">Type</label>
+                        <select className="field-input" value={f.type} onChange={e => updateField(f.id, 'type', e.target.value)}>
+                          {FIELD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="field-row" style={{ marginTop: 8 }}>
+                      <div className="field-group" style={{ margin: 0 }}>
+                        <label className="field-label">Placeholder</label>
+                        <input className="field-input" defaultValue={f.placeholder} placeholder="Hint text…"
+                          onBlur={e => updateField(f.id, 'placeholder', e.target.value)} />
+                      </div>
+                      <div className="field-group" style={{ margin: 0, display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text2)' }}>
+                          <input type="checkbox" checked={f.required} onChange={e => updateField(f.id, 'required', e.target.checked)} style={{ accentColor: 'var(--orange)' }} />
+                          Required
+                        </label>
+                      </div>
+                    </div>
+                    {f.type === 'choice' && (
+                      <div style={{ marginTop: 12 }}>
+                        <label className="field-label">Choices</label>
+                        <ChoiceEditor choices={f.choices||[]} onAdd={c => addChoice(f.id,c)} onRemove={c => removeChoice(f.id,c)} />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button className="btn btn-ghost" onClick={() => setStep(1)}><IconBack /> Back</button>
-                <button className="btn btn-primary" onClick={() => setStep(3)}>Next: AI Setup <IconArrow /></button>
+                <button className="btn btn-primary" onClick={() => setStep(3)}>AI Setup <IconArrow /></button>
               </div>
             </div>
           )}
 
-          {/* Step 3: AI */}
+          {/* ── Step 3: AI ── */}
           {step === 3 && (
             <div className="fade-up">
               <div className="card" style={{ marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <span className="badge badge-ai"><IconSparkle /> Gemini AI</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <div className="eyebrow">AI Engine</div>
+                  <span className="badge badge-ai"><IconSparkle /> Gemini 1.5</span>
                 </div>
                 <div className="field-group" style={{ marginBottom: 0 }}>
                   <label className="field-label">Analysis Instructions</label>
                   <textarea className="field-input" style={{ minHeight: 160 }}
                     defaultValue={form.ai_instructions}
-                    placeholder="e.g. Act as a senior business consultant. Analyze the respondent's goals and budget, then suggest exactly 3 actionable growth strategies tailored to their industry and scale. Be specific, concise, and practical."
+                    placeholder="e.g. Act as a senior business consultant. Analyze the respondent's goals and budget. Suggest exactly 3 actionable growth strategies with a title, rationale, and first step each. Be specific, concise, and avoid generic advice."
                     onBlur={e => save({ ai_instructions: e.target.value })}
                     onChange={e => setForm(f => f ? { ...f, ai_instructions: e.target.value } : f)}
                   />
-                  <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6 }}>
-                    This prompt guides Gemini AI when analyzing each submission. Be specific about role, output format, and tone.
+                  <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, lineHeight: 1.7 }}>
+                    This prompt guides Gemini AI for every submission. Specify role, output format, and tone.
                   </p>
                 </div>
               </div>
-              <div className="card" style={{ background: 'var(--bg3)', marginBottom: 14 }}>
-                <p style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.8 }}>
-                  <strong style={{ color: 'var(--text)' }}>Tips:</strong><br />
-                  • Specify a role: <em>"Act as a marketing strategist…"</em><br />
-                  • Define output: <em>"Give exactly 3 bullet-point recommendations…"</em><br />
-                  • Set tone: <em>"Be concise, direct, and avoid jargon…"</em>
+              <div className="card" style={{ background: 'var(--off-white)', borderLeft: '3px solid var(--orange)', marginBottom: 14 }}>
+                <p style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.85 }}>
+                  <strong style={{ fontFamily: 'var(--font-head)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text)' }}>Tips</strong><br />
+                  • Role: <code>"Act as a marketing strategist…"</code><br />
+                  • Output: <code>"Give exactly 3 bullet-point recommendations…"</code><br />
+                  • Tone: <code>"Be concise, direct, avoid jargon…"</code>
                 </p>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -269,45 +263,55 @@ export default function Builder() {
             </div>
           )}
 
-          {/* Step 4: Publish */}
+          {/* ── Step 4: Publish ── */}
           {step === 4 && (
             <div className="fade-up">
               <div className="card" style={{ marginBottom: 14 }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{form.title || 'Untitled Form'}</div>
+                <div className="eyebrow" style={{ marginBottom: 12 }}>Summary</div>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 4 }}>
+                  {form.title || 'Untitled Form'}
+                </div>
                 {form.description && <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>{form.description}</p>}
                 <div className="meta-grid">
                   <div className="meta-cell"><div className="meta-label">Fields</div><div className="meta-value">{form.fields.length}</div></div>
                   <div className="meta-cell"><div className="meta-label">Required</div><div className="meta-value">{form.fields.filter(f => f.required).length}</div></div>
-                  <div className="meta-cell"><div className="meta-label">AI</div><div className="meta-value" style={{ fontSize: 13 }}>{form.ai_instructions ? 'Enabled' : '—'}</div></div>
+                  <div className="meta-cell"><div className="meta-label">AI</div><div className="meta-value" style={{ fontSize: 13, paddingTop: 4 }}>{form.ai_instructions ? '✓ Set' : '—'}</div></div>
                 </div>
               </div>
+
               {form.fields.length === 0 && (
-                <div className="card" style={{ background: 'rgba(253,203,110,0.07)', borderColor: 'rgba(253,203,110,0.2)', marginBottom: 14 }}>
-                  <p style={{ fontSize: 13, color: 'var(--amber)' }}>⚠ Add at least one field before publishing.</p>
+                <div className="card" style={{ background: '#fef8e8', borderColor: '#e8d89a', borderLeft: '3px solid var(--amber)', marginBottom: 14 }}>
+                  <p style={{ fontSize: 11, color: 'var(--amber)', fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    ⚠ Add at least one field before publishing
+                  </p>
                 </div>
               )}
+
               {form.published && (
-                <div className="card" style={{ background: 'rgba(85,239,196,0.05)', borderColor: 'rgba(85,239,196,0.2)', marginBottom: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <IconCheck /><span style={{ fontSize: 13, fontWeight: 500, color: 'var(--success)' }}>Form is Live</span>
+                <div className="card" style={{ background: '#e8f5ee', borderColor: '#b6ddc8', borderLeft: '3px solid var(--success)', marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <span style={{ fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--success)' }}>
+                      ✓ Form is Live
+                    </span>
                   </div>
                   <div className="link-box">
-                    <span>{shareUrl}</span>
-                    <button className="btn-icon" onClick={copyLink} style={{ flexShrink: 0 }}>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><path d="M4 3.5V3a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-                    </button>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shareUrl}</span>
+                    <button className="btn btn-sm" onClick={copyLink} style={{ flexShrink: 0 }}>Copy</button>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <div style={{ marginTop: 10 }}>
                     <button className="btn btn-sm" onClick={() => window.open(`/f/${form.id}`, '_blank')}><IconEye /> Preview</button>
                   </div>
                 </div>
               )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button className="btn btn-ghost" onClick={() => setStep(3)}><IconBack /> Back</button>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {form.published
-                    ? <button className="btn" style={{ borderColor: 'rgba(255,118,117,0.3)', color: 'var(--danger)' }} onClick={unpublishForm}>Unpublish</button>
-                    : <button className="btn btn-primary" disabled={form.fields.length === 0} onClick={publishForm}><IconSparkle /> Publish Form</button>
+                    ? <button className="btn btn-danger" onClick={unpublishForm}>Unpublish</button>
+                    : <button className="btn btn-primary" disabled={form.fields.length === 0} onClick={publishForm}>
+                        <IconSparkle /> Publish Form
+                      </button>
                   }
                 </div>
               </div>
@@ -324,16 +328,20 @@ function ChoiceEditor({ choices, onAdd, onRemove }: { choices: string[]; onAdd: 
   return (
     <div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-        <input className="field-input" style={{ flex: 1 }} value={val} placeholder="Add choice…"
+        <input className="field-input" style={{ flex: 1 }} value={val} placeholder="Type a choice and press Enter…"
           onChange={e => setVal(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { onAdd(val); setVal('') } }}
-        />
-        <button className="btn btn-sm" onClick={() => { onAdd(val); setVal('') }}><IconPlus /></button>
+          onKeyDown={e => { if (e.key==='Enter'&&val.trim()) { onAdd(val); setVal('') }}} />
+        <button className="btn btn-sm" onClick={() => { if(val.trim()){ onAdd(val); setVal('') } }}><IconPlus /></button>
       </div>
       <div>{choices.map(c => (
-        <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 12, margin: 3 }}>
+        <span key={c} style={{
+          display:'inline-flex',alignItems:'center',gap:5,
+          padding:'4px 10px',background:'var(--orange-lt)',
+          border:'1px solid rgba(232,97,42,0.2)',borderRadius:'var(--r)',
+          fontSize:12,margin:3,color:'var(--orange)',fontFamily:'var(--font-mono)'
+        }}>
           {c}
-          <button onClick={() => onRemove(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 14, padding: 0, lineHeight: 1 }}>×</button>
+          <button onClick={() => onRemove(c)} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--orange-dk)',fontSize:14,padding:0,lineHeight:1 }}>×</button>
         </span>
       ))}</div>
     </div>

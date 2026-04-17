@@ -37,3 +37,26 @@ export const IconResponses = () => (
     <path d="M4 6h6M4 8.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
   </svg>
 )
+export const IconSettings = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="7" r="1.8" stroke="currentColor" strokeWidth="1.4"/>
+    <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.4 2.4l1.1 1.1M10.5 10.5l1.1 1.1M11.6 2.4l-1.1 1.1M3.5 10.5l-1.1 1.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+)
+export const IconKey = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="5" cy="7" r="3" stroke="currentColor" strokeWidth="1.4"/>
+    <path d="M7.5 7h5M10.5 7v1.5M12.5 7v1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+)
+export const IconX = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+)
+export const IconShield = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 1.5L2 3.5v4c0 3 2.5 4.5 5 5.5 2.5-1 5-2.5 5-5.5v-4L7 1.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+    <path d="M4.5 7l1.5 1.5L9.5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)

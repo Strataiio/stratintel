@@ -429,3 +429,68 @@ code, .mono {
   .step-bar   { gap: 6px; }
   .step span  { display: none; }
 }
+
+/* ── Settings Drawer ────────────────────────────────────────────────────────── */
+.drawer-overlay {
+  position: fixed; inset: 0; background: rgba(17,17,16,0.45);
+  z-index: 300; animation: fadeIn 0.18s ease;
+}
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 420px; max-width: 100vw;
+  background: var(--white); border-left: 1px solid var(--border);
+  z-index: 301; display: flex; flex-direction: column;
+  animation: slideIn 0.22s ease;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.08);
+}
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.drawer-title {
+  font-family: var(--font-head); font-size: 14px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.drawer-body {
+  flex: 1; overflow-y: auto; padding: 24px;
+}
+.drawer-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── API key status indicator ───────────────────────────────────────────────── */
+.key-status {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; border-radius: var(--r);
+  font-size: 12px; margin-bottom: 16px;
+  border: 1px solid;
+}
+.key-status.ok    { background: #e8f5ee; border-color: #b6ddc8; color: var(--success); }
+.key-status.error { background: rgba(192,57,43,0.06); border-color: rgba(192,57,43,0.2); color: var(--danger); }
+.key-status.idle  { background: var(--off-white); border-color: var(--border); color: var(--text3); }
+
+/* ── Section divider inside drawer ─────────────────────────────────────────── */
+.drawer-section { margin-bottom: 28px; }
+.drawer-section-title {
+  font-family: var(--font-head); font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text3); margin-bottom: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+
+/* ── Masked input ───────────────────────────────────────────────────────────── */
+.key-input-wrap { position: relative; }
+.key-input-wrap .field-input { padding-right: 44px; font-family: var(--font-mono); font-size: 13px; }
+.key-toggle-btn {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--text3);
+  font-size: 11px; font-family: var(--font-head); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 4px;
+}
+.key-toggle-btn:hover { color: var(--orange); }

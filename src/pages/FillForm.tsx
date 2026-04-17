@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, StratForm, FormField } from '../lib/supabase'
-import { analyzeWithGemini } from '../lib/gemini'
+import { analyzeWithGemini } from '../lib/ai'
 import { downloadText } from '../lib/utils'
 import Topbar from '../components/Topbar'
 import { IconSparkle, IconDownload } from '../components/Icons'

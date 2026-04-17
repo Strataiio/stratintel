@@ -3,8 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { supabase, StratForm } from '../lib/supabase'
 import { genId, showToast, formatDate } from '../lib/utils'
 import {
-  getGeminiApiKey, setGeminiApiKey, clearGeminiApiKey, testGeminiApiKey, GEMINI_KEY_STORAGE
-} from '../lib/gemini'
+  AIProvider,
+  getProvider, setProvider,
+  getGeminiApiKey, setGeminiApiKey, clearGeminiApiKey, testGeminiKey, GEMINI_KEY_STORAGE,
+  getOpenAIApiKey, setOpenAIApiKey, clearOpenAIApiKey, testOpenAIKey, OPENAI_KEY_STORAGE,
+  getOpenAIModel, setOpenAIModel, OPENAI_MODELS,
+} from '../lib/ai'
 import Topbar from '../components/Topbar'
 import {
   IconPlus, IconTrash, IconLink, IconEye, IconEdit,
@@ -13,54 +17,56 @@ import {
 
 // ── Settings Drawer ──────────────────────────────────────────────────────────
 function SettingsDrawer({ onClose }: { onClose: () => void }) {
-  const [apiKey, setApiKey] = useState(getGeminiApiKey())
-  const [showKey, setShowKey] = useState(false)
-  const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<{ ok: boolean; model?: string; error?: string } | null>(null)
-  const [saved, setSaved] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [provider, setProviderState] = useState<AIProvider>(getProvider())
 
-  // Detect if the current key came from env or localStorage
-  const envKey = import.meta.env.VITE_GEMINI_API_KEY || ''
-  const storedKey = localStorage.getItem(GEMINI_KEY_STORAGE) || ''
-  const usingEnvKey = !storedKey && !!envKey
-  const hasKey = !!apiKey.trim()
+  // Gemini state
+  const [geminiKey, setGeminiKeyState] = useState(getGeminiApiKey())
+  const [showGeminiKey, setShowGeminiKey] = useState(false)
+  const [geminiTesting, setGeminiTesting] = useState(false)
+  const [geminiResult, setGeminiResult] = useState<{ ok: boolean; model?: string; error?: string } | null>(null)
 
-  async function handleTest() {
-    if (!apiKey.trim()) { showToast('Enter an API key first'); return }
-    setTesting(true); setTestResult(null)
-    const result = await testGeminiApiKey(apiKey.trim())
-    setTestResult(result)
-    setTesting(false)
+  // OpenAI state
+  const [openaiKey, setOpenaiKeyState] = useState(getOpenAIApiKey())
+  const [openaiModel, setOpenaiModelState] = useState(getOpenAIModel())
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false)
+  const [openaiTesting, setOpenaiTesting] = useState(false)
+  const [openaiResult, setOpenaiResult] = useState<{ ok: boolean; model?: string; error?: string } | null>(null)
+
+  function switchProvider(p: AIProvider) {
+    setProvider(p)
+    setProviderState(p)
+    showToast(`Switched to ${p === 'gemini' ? 'Google Gemini' : 'OpenAI'}`)
   }
 
-  function handleSave() {
-    setGeminiApiKey(apiKey)
-    setSaved(true)
-    setTestResult(null)
-    showToast('API key saved')
-    setTimeout(() => setSaved(false), 2000)
+  // ── Gemini actions ──
+  async function testGemini() {
+    setGeminiTesting(true); setGeminiResult(null)
+    const r = await testGeminiKey(geminiKey.trim())
+    setGeminiResult(r); setGeminiTesting(false)
+  }
+  function saveGemini() {
+    setGeminiApiKey(geminiKey); setGeminiResult(null)
+    showToast('Gemini API key saved')
   }
 
-  function handleClear() {
-    if (!confirm('Remove the saved API key? The system will fall back to the environment variable if set.')) return
-    clearGeminiApiKey()
-    setApiKey(envKey || '')
-    setTestResult(null)
-    showToast('API key cleared')
+  // ── OpenAI actions ──
+  async function testOpenAI() {
+    setOpenaiTesting(true); setOpenaiResult(null)
+    const r = await testOpenAIKey(openaiKey.trim(), openaiModel)
+    setOpenaiResult(r); setOpenaiTesting(false)
+  }
+  function saveOpenAI() {
+    setOpenAIApiKey(openaiKey)
+    setOpenAIModel(openaiModel)
+    setOpenaiResult(null)
+    showToast('OpenAI settings saved')
   }
 
-  function maskKey(k: string) {
-    if (!k || k.length < 12) return k
-    return k.slice(0, 8) + '•'.repeat(Math.min(k.length - 12, 20)) + k.slice(-4)
-  }
+  const activeKey = provider === 'gemini' ? getGeminiApiKey() : getOpenAIApiKey()
 
   return (
     <>
-      {/* Overlay */}
       <div className="drawer-overlay" onClick={onClose} />
-
-      {/* Drawer */}
       <div className="drawer">
         {/* Header */}
         <div className="drawer-header">
@@ -71,170 +77,246 @@ function SettingsDrawer({ onClose }: { onClose: () => void }) {
           <button className="btn-icon" onClick={onClose}><IconX /></button>
         </div>
 
-        {/* Body */}
         <div className="drawer-body">
 
-          {/* ── API Key Section ── */}
+          {/* ── Provider selector ── */}
           <div className="drawer-section">
-            <div className="drawer-section-title">Gemini AI · API Key</div>
+            <div className="drawer-section-title">AI Provider</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {([
+                { id: 'gemini' as AIProvider, label: 'Google Gemini', sub: 'gemini-2.0-flash', logo: '◈' },
+                { id: 'openai' as AIProvider, label: 'OpenAI',        sub: 'GPT-4o / GPT-4o Mini', logo: '⬡' },
+              ]).map(p => {
+                const isActive = provider === p.id
+                const hasKey = p.id === 'gemini' ? !!getGeminiApiKey() : !!getOpenAIApiKey()
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => switchProvider(p.id)}
+                    style={{
+                      padding: '12px 14px', borderRadius: 'var(--r2)', cursor: 'pointer',
+                      border: isActive ? '2px solid var(--orange)' : '1px solid var(--border)',
+                      background: isActive ? 'var(--orange-lt)' : 'var(--off-white)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 18, color: isActive ? 'var(--orange)' : 'var(--text3)' }}>{p.logo}</span>
+                      {isActive && (
+                        <span style={{
+                          fontSize: 9, fontFamily: 'var(--font-head)', fontWeight: 700,
+                          textTransform: 'uppercase', letterSpacing: '0.5px',
+                          background: 'var(--orange)', color: 'white',
+                          padding: '2px 6px', borderRadius: 3,
+                        }}>Active</span>
+                      )}
+                      {!isActive && hasKey && (
+                        <span style={{ fontSize: 9, color: 'var(--success)' }}>✓ Key set</span>
+                      )}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.03em', color: isActive ? 'var(--orange)' : 'var(--text)' }}>
+                      {p.label}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+                      {p.sub}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
 
-            {/* Current status */}
-            {hasKey ? (
-              <div className={`key-status ${testResult ? (testResult.ok ? 'ok' : 'error') : 'ok'}`}>
-                {testResult ? (
-                  testResult.ok
-                    ? <><IconCheck /> Key valid · using <code style={{ fontSize:11 }}>{testResult.model}</code></>
-                    : <><span style={{ fontSize:14 }}>⚠</span> {testResult.error}</>
-                ) : (
-                  usingEnvKey
-                    ? <><IconShield /> Using environment key (set in Vercel)</>
-                    : <><IconShield /> Custom key saved in this browser</>
-                )}
-              </div>
-            ) : (
-              <div className="key-status error">
-                <span style={{ fontSize: 14 }}>⚠</span> No API key configured
-              </div>
-            )}
-
-            {/* Input */}
-            <div className="field-group">
-              <label className="field-label">
-                <span style={{ display:'flex', alignItems:'center', gap:6 }}>
-                  <IconKey /> Gemini API Key
+          {/* ── Gemini Section ── */}
+          <div className="drawer-section">
+            <div className="drawer-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>Google Gemini</span>
+              {provider === 'gemini' && (
+                <span style={{ fontSize: 9, fontFamily: 'var(--font-head)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', background: 'var(--orange)', color: 'white', padding: '1px 5px', borderRadius: 2 }}>
+                  Active
                 </span>
-              </label>
+              )}
+            </div>
+
+            {/* Status */}
+            <div className={`key-status ${geminiKey ? (geminiResult ? (geminiResult.ok ? 'ok' : 'error') : 'ok') : 'error'}`}>
+              {geminiKey
+                ? geminiResult
+                  ? geminiResult.ok
+                    ? <><IconCheck /> Connected · <code style={{ fontSize: 10 }}>{geminiResult.model}</code></>
+                    : <><span>⚠</span> {geminiResult.error}</>
+                  : <><IconShield /> Key configured</>
+                : <><span>⚠</span> No key set</>
+              }
+            </div>
+
+            <div className="field-group">
+              <label className="field-label"><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><IconKey /> API Key</span></label>
               <div className="key-input-wrap">
-                <input
-                  ref={inputRef}
-                  className="field-input"
-                  type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  placeholder="AIza••••••••••••••••••••••••••••••••••"
-                  onChange={e => { setApiKey(e.target.value); setTestResult(null); setSaved(false) }}
-                  onKeyDown={e => { if (e.key === 'Enter') handleTest() }}
-                  autoComplete="off"
-                  spellCheck={false}
+                <input className="field-input" type={showGeminiKey ? 'text' : 'password'}
+                  value={geminiKey} placeholder="AIza••••••••••••••••••••••••"
+                  onChange={e => { setGeminiKeyState(e.target.value); setGeminiResult(null) }}
+                  onKeyDown={e => e.key === 'Enter' && testGemini()}
+                  autoComplete="off" spellCheck={false}
                 />
-                <button
-                  className="key-toggle-btn"
-                  onClick={() => setShowKey(v => !v)}
-                  type="button"
-                >
-                  {showKey ? 'Hide' : 'Show'}
+                <button className="key-toggle-btn" onClick={() => setShowGeminiKey(v => !v)} type="button">
+                  {showGeminiKey ? 'Hide' : 'Show'}
                 </button>
               </div>
-              <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6, lineHeight: 1.7 }}>
-                Your key is stored locally in this browser only — never sent to our servers.
-                Get one free at{' '}
-                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
-                   style={{ color: 'var(--orange)' }}>
+              <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 5, lineHeight: 1.6 }}>
+                Free key from{' '}
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--orange)' }}>
                   aistudio.google.com/apikey
                 </a>
               </p>
             </div>
 
-            {/* Actions */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleSave}
-                disabled={!apiKey.trim() || saved}
-              >
-                {saved ? <><IconCheck /> Saved</> : 'Save Key'}
+              <button className="btn btn-primary btn-sm" onClick={saveGemini} disabled={!geminiKey.trim()}>Save Key</button>
+              <button className="btn btn-sm" onClick={testGemini} disabled={geminiTesting || !geminiKey.trim()}>
+                {geminiTesting ? <><div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} /> Testing…</> : <><IconSparkle /> Test</>}
               </button>
-              <button
-                className="btn btn-sm"
-                onClick={handleTest}
-                disabled={testing || !apiKey.trim()}
-              >
-                {testing ? <><div className="spinner" style={{ width:12, height:12, borderWidth:2 }} /> Testing…</> : <><IconSparkle /> Test Key</>}
-              </button>
-              {storedKey && (
-                <button className="btn btn-sm btn-danger" onClick={handleClear}>
-                  Clear Saved Key
-                </button>
+              {localStorage.getItem(GEMINI_KEY_STORAGE) && (
+                <button className="btn btn-sm btn-danger" onClick={() => { clearGeminiApiKey(); setGeminiKeyState(''); setGeminiResult(null) }}>Clear</button>
               )}
             </div>
 
-            {/* Test result detail */}
-            {testResult && (
-              <div style={{
-                marginTop: 12, padding: '10px 14px', borderRadius: 'var(--r)',
-                background: testResult.ok ? '#e8f5ee' : 'rgba(192,57,43,0.06)',
-                border: `1px solid ${testResult.ok ? '#b6ddc8' : 'rgba(192,57,43,0.2)'}`,
-                fontSize: 12, lineHeight: 1.7,
-                color: testResult.ok ? 'var(--success)' : 'var(--danger)',
+            {geminiResult && (
+              <div style={{ marginTop: 10, padding: '10px 13px', borderRadius: 'var(--r)', fontSize: 12, lineHeight: 1.65,
+                background: geminiResult.ok ? '#e8f5ee' : 'rgba(192,57,43,0.05)',
+                border: `1px solid ${geminiResult.ok ? '#b6ddc8' : 'rgba(192,57,43,0.2)'}`,
+                color: geminiResult.ok ? 'var(--success)' : 'var(--danger)',
               }}>
-                {testResult.ok
-                  ? <>✓ Connection successful · Gemini model: <strong>{testResult.model}</strong><br />Your AI engine is ready.</>
-                  : <>{testResult.error}
-                      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
-                         style={{ display:'block', marginTop:6, color:'var(--orange)', fontFamily:'var(--font-mono)', fontSize:11 }}>
-                        → aistudio.google.com/apikey
-                      </a>
-                    </>
+                {geminiResult.ok
+                  ? <>✓ Connected · model: <strong>{geminiResult.model}</strong></>
+                  : <>{geminiResult.error}
+                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
+                      style={{ display: 'block', marginTop: 5, color: 'var(--orange)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                      → aistudio.google.com/apikey
+                    </a>
+                  </>
                 }
               </div>
             )}
           </div>
 
-          {/* ── How it works ── */}
+          {/* ── OpenAI Section ── */}
           <div className="drawer-section">
-            <div className="drawer-section-title">How Key Priority Works</div>
-            <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.85 }}>
-              {[
-                ['1st', 'Key saved here in browser (overrides all)', 'var(--orange)'],
-                ['2nd', 'VITE_GEMINI_API_KEY in Vercel env vars', 'var(--text3)'],
-              ].map(([step, desc, col]) => (
-                <div key={step as string} style={{ display:'flex', gap:10, marginBottom:8 }}>
-                  <span style={{
-                    fontFamily:'var(--font-head)', fontWeight:700, fontSize:10,
-                    color: col as string, width:28, flexShrink:0, paddingTop:1
-                  }}>{step as string}</span>
-                  <span>{desc as string}</span>
-                </div>
-              ))}
+            <div className="drawer-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>OpenAI</span>
+              {provider === 'openai' && (
+                <span style={{ fontSize: 9, fontFamily: 'var(--font-head)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', background: 'var(--orange)', color: 'white', padding: '1px 5px', borderRadius: 2 }}>
+                  Active
+                </span>
+              )}
             </div>
+
+            {/* Status */}
+            <div className={`key-status ${openaiKey ? (openaiResult ? (openaiResult.ok ? 'ok' : 'error') : 'ok') : 'error'}`}>
+              {openaiKey
+                ? openaiResult
+                  ? openaiResult.ok
+                    ? <><IconCheck /> Connected · <code style={{ fontSize: 10 }}>{openaiResult.model}</code></>
+                    : <><span>⚠</span> {openaiResult.error}</>
+                  : <><IconShield /> Key configured</>
+                : <><span>⚠</span> No key set</>
+              }
+            </div>
+
+            <div className="field-group">
+              <label className="field-label"><span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><IconKey /> API Key</span></label>
+              <div className="key-input-wrap">
+                <input className="field-input" type={showOpenaiKey ? 'text' : 'password'}
+                  value={openaiKey} placeholder="sk-••••••••••••••••••••••••••••"
+                  onChange={e => { setOpenaiKeyState(e.target.value); setOpenaiResult(null) }}
+                  onKeyDown={e => e.key === 'Enter' && testOpenAI()}
+                  autoComplete="off" spellCheck={false}
+                />
+                <button className="key-toggle-btn" onClick={() => setShowOpenaiKey(v => !v)} type="button">
+                  {showOpenaiKey ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 5, lineHeight: 1.6 }}>
+                Get key from{' '}
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" style={{ color: 'var(--orange)' }}>
+                  platform.openai.com/api-keys
+                </a>
+              </p>
+            </div>
+
+            <div className="field-group">
+              <label className="field-label">Model</label>
+              <select className="field-input" value={openaiModel} onChange={e => setOpenaiModelState(e.target.value)}>
+                {OPENAI_MODELS.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn btn-primary btn-sm" onClick={saveOpenAI} disabled={!openaiKey.trim()}>Save</button>
+              <button className="btn btn-sm" onClick={testOpenAI} disabled={openaiTesting || !openaiKey.trim()}>
+                {openaiTesting ? <><div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} /> Testing…</> : <><IconSparkle /> Test</>}
+              </button>
+              {localStorage.getItem(OPENAI_KEY_STORAGE) && (
+                <button className="btn btn-sm btn-danger" onClick={() => { clearOpenAIApiKey(); setOpenaiKeyState(''); setOpenaiResult(null) }}>Clear</button>
+              )}
+            </div>
+
+            {openaiResult && (
+              <div style={{ marginTop: 10, padding: '10px 13px', borderRadius: 'var(--r)', fontSize: 12, lineHeight: 1.65,
+                background: openaiResult.ok ? '#e8f5ee' : 'rgba(192,57,43,0.05)',
+                border: `1px solid ${openaiResult.ok ? '#b6ddc8' : 'rgba(192,57,43,0.2)'}`,
+                color: openaiResult.ok ? 'var(--success)' : 'var(--danger)',
+              }}>
+                {openaiResult.ok
+                  ? <>✓ Connected · model: <strong>{openaiResult.model}</strong></>
+                  : <>{openaiResult.error}
+                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer"
+                      style={{ display: 'block', marginTop: 5, color: 'var(--orange)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                      → platform.openai.com/api-keys
+                    </a>
+                  </>
+                }
+              </div>
+            )}
           </div>
 
           {/* ── Quick links ── */}
           <div className="drawer-section">
             <div className="drawer-section-title">Quick Links</div>
             {[
-              ['Get API Key', 'https://aistudio.google.com/apikey', 'Free from Google AI Studio'],
-              ['Vercel Env Vars', 'https://vercel.com/dashboard', 'Update VITE_GEMINI_API_KEY'],
-              ['GitHub Repo', 'https://github.com/Strataiio/stratintel', 'Source code'],
+              ['Gemini API Key', 'https://aistudio.google.com/apikey', 'aistudio.google.com'],
+              ['OpenAI API Key', 'https://platform.openai.com/api-keys', 'platform.openai.com'],
+              ['OpenAI Usage & Billing', 'https://platform.openai.com/usage', 'platform.openai.com/usage'],
+              ['GitHub Repo', 'https://github.com/Strataiio/stratintel', 'Strataiio/stratintel'],
             ].map(([label, url, hint]) => (
-              <a key={url as string} href={url as string} target="_blank" rel="noreferrer"
+              <a key={url} href={url} target="_blank" rel="noreferrer"
                 style={{
-                  display:'flex', alignItems:'center', justifyContent:'space-between',
-                  padding:'10px 12px', borderRadius:'var(--r)',
-                  border:'1px solid var(--border)', marginBottom:8,
-                  textDecoration:'none', background:'var(--off-white)',
-                  transition:'border-color 0.15s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '9px 12px', borderRadius: 'var(--r)',
+                  border: '1px solid var(--border)', marginBottom: 7,
+                  textDecoration: 'none', background: 'var(--off-white)',
+                  transition: 'border-color 0.15s',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--orange)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
               >
                 <div>
-                  <div style={{ fontSize:13, fontWeight:500, color:'var(--text)' }}>{label as string}</div>
-                  <div style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--font-mono)' }}>{hint as string}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{label}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>{hint}</div>
                 </div>
-                <span style={{ fontSize:14, color:'var(--text3)' }}>↗</span>
+                <span style={{ fontSize: 13, color: 'var(--text3)' }}>↗</span>
               </a>
             ))}
           </div>
 
-          {/* ── Version ── */}
-          <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)', textAlign:'center', paddingTop:8 }}>
-            StratIntel v1.0 · stratai.io · Gemini + Supabase
+          <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)', textAlign: 'center', paddingTop: 4 }}>
+            StratIntel v1.0 · stratai.io
           </div>
         </div>
 
-        {/* Footer */}
         <div className="drawer-footer">
-          <button className="btn" style={{ width:'100%' }} onClick={onClose}>Done</button>
+          <button className="btn" style={{ width: '100%' }} onClick={onClose}>Done</button>
         </div>
       </div>
     </>
@@ -250,8 +332,9 @@ export default function Dashboard() {
   const [duplicating, setDuplicating] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
 
-  // API key health indicator for topbar
-  const hasApiKey = !!getGeminiApiKey()
+  const provider = getProvider()
+  const hasApiKey = provider === 'gemini' ? !!getGeminiApiKey() : !!getOpenAIApiKey()
+  const providerLabel = provider === 'gemini' ? 'Gemini' : 'OpenAI'
 
   useEffect(() => { loadForms() }, [])
 
@@ -288,7 +371,7 @@ export default function Dashboard() {
       id: newId, title: `${form.title} (Copy)`,
       description: form.description, ai_instructions: form.ai_instructions,
       fields: form.fields, published: false,
-      ai_enabled: form.ai_enabled, redirect_url: form.redirect_url || '',
+      ai_enabled: (form as any).ai_enabled, redirect_url: (form as any).redirect_url || '',
     })
     await loadForms()
     setDuplicating(null)
@@ -317,25 +400,14 @@ export default function Dashboard() {
     <div className="app">
       <Topbar right={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* API key warning dot */}
           {!hasApiKey && (
-            <button
-              className="btn btn-sm"
-              onClick={() => setShowSettings(true)}
-              style={{ borderColor: 'rgba(192,57,43,0.3)', color: 'var(--danger)', fontSize: 12 }}
-              title="Gemini API key not configured"
-            >
+            <button className="btn btn-sm" onClick={() => setShowSettings(true)}
+              style={{ borderColor: 'rgba(192,57,43,0.3)', color: 'var(--danger)', fontSize: 12 }}>
               <span style={{ fontSize: 10 }}>⚠</span> Set API Key
             </button>
           )}
-          <button
-            className="btn btn-sm"
-            onClick={() => setShowSettings(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            title="Settings"
-          >
-            <IconSettings />
-            Settings
+          <button className="btn btn-sm" onClick={() => setShowSettings(true)}>
+            <IconSettings /> Settings
           </button>
           <button className="btn btn-primary btn-sm" onClick={createNew}>
             <IconPlus /> New Form
@@ -367,15 +439,11 @@ export default function Dashboard() {
               <div className="stat-label">Responses</div>
               <div className="stat-value" style={{ color: 'var(--orange)' }}>{totalResps}</div>
             </div>
-            <div
-              className="stat-cell"
-              style={{ cursor: 'pointer', borderColor: hasApiKey ? 'var(--border)' : 'rgba(232,97,42,0.3)' }}
-              onClick={() => setShowSettings(true)}
-              title="Click to manage API key"
-            >
-              <div className="stat-label">AI Engine</div>
-              <div className="stat-value" style={{ fontSize: 14, paddingTop: 4, color: hasApiKey ? 'var(--orange)' : 'var(--text3)' }}>
-                {hasApiKey ? '✓ Active' : '⚠ No Key'}
+            <div className="stat-cell" style={{ cursor: 'pointer', borderColor: hasApiKey ? 'var(--border)' : 'rgba(232,97,42,0.3)' }}
+              onClick={() => setShowSettings(true)} title="Click to manage AI settings">
+              <div className="stat-label">AI Provider</div>
+              <div className="stat-value" style={{ fontSize: 13, paddingTop: 4, color: hasApiKey ? 'var(--orange)' : 'var(--text3)' }}>
+                {hasApiKey ? `✓ ${providerLabel}` : '⚠ No Key'}
               </div>
             </div>
           </div>
@@ -434,28 +502,21 @@ export default function Dashboard() {
                     <span>{formatDate(f.created_at)}</span>
                   </div>
 
-                  <div
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--border)' }}
-                    onClick={e => e.stopPropagation()}
-                  >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--border)' }}
+                    onClick={e => e.stopPropagation()}>
                     <button className="btn-icon" title="Edit" onClick={() => navigate(`/builder/${f.id}`)}><IconEdit /></button>
                     {f.published && <>
                       <button className="btn-icon" title="Copy link" onClick={e => copyLink(e, f.id)}><IconLink /></button>
                       <button className="btn-icon" title="Preview" onClick={() => window.open(`/f/${f.id}`, '_blank')}><IconEye /></button>
                     </>}
                     <button className="btn-icon" title="Responses" onClick={() => navigate(`/responses/${f.id}`)}><IconResponses /></button>
-                    <button
-                      className="btn-icon" title="Duplicate"
-                      onClick={e => duplicateForm(e, f)}
-                      disabled={duplicating === f.id}
-                      style={{ opacity: duplicating === f.id ? 0.5 : 1 }}
-                    ><IconCopy /></button>
+                    <button className="btn-icon" title="Duplicate" disabled={duplicating === f.id}
+                      onClick={e => duplicateForm(e, f)} style={{ opacity: duplicating === f.id ? 0.5 : 1 }}>
+                      <IconCopy />
+                    </button>
                     <div style={{ marginLeft: 'auto' }}>
-                      <button
-                        className="btn-icon"
-                        style={{ color: 'var(--danger)', borderColor: 'rgba(192,57,43,0.2)' }}
-                        onClick={e => deleteForm(e, f.id)}
-                      ><IconTrash /></button>
+                      <button className="btn-icon" style={{ color: 'var(--danger)', borderColor: 'rgba(192,57,43,0.2)' }}
+                        onClick={e => deleteForm(e, f.id)}><IconTrash /></button>
                     </div>
                   </div>
                 </div>
@@ -464,23 +525,16 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Footer */}
         <div style={{ marginTop: 48, paddingTop: 20, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             StratIntel · stratai.io
           </span>
-          <button
-            className="btn-icon"
-            onClick={() => setShowSettings(true)}
-            title="Settings"
-            style={{ color: 'var(--text3)' }}
-          >
+          <button className="btn-icon" onClick={() => setShowSettings(true)} title="Settings" style={{ color: 'var(--text3)' }}>
             <IconSettings />
           </button>
         </div>
       </div>
 
-      {/* Settings Drawer */}
       {showSettings && <SettingsDrawer onClose={() => setShowSettings(false)} />}
 
       <style>{`

@@ -31,7 +31,10 @@ export default function Builder() {
 
   async function loadForm(fid: string) {
     const { data } = await supabase.from('strat_forms').select('*').eq('id', fid).single()
-    if (data) setForm(data)
+    if (data) {
+      // Default ai_enabled to true for existing forms that don't have the field
+      setForm({ ai_enabled: true, redirect_url: '', ...data })
+    }
   }
 
   const save = useCallback(async (updates: Partial<StratForm>) => {
@@ -95,8 +98,8 @@ export default function Builder() {
   )
 
   const shareUrl = `${window.location.origin}/f/${form.id}`
-
   const STEPS = [{n:1,l:'Details'},{n:2,l:'Fields'},{n:3,l:'AI Setup'},{n:4,l:'Publish'}]
+  const aiEnabled = form.ai_enabled !== false // default true
 
   return (
     <div className="app">
@@ -108,7 +111,6 @@ export default function Builder() {
       } />
       <div className="main">
         <div style={{ maxWidth: 700, margin: '0 auto' }} className="fade-up">
-          {/* Back */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
             <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')}><IconBack /> Dashboard</button>
             <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
@@ -116,7 +118,7 @@ export default function Builder() {
             </span>
           </div>
 
-          {/* Steps */}
+          {/* Step bar */}
           <div className="step-bar">
             {STEPS.map((s, i) => (
               <React.Fragment key={s.n}>
@@ -169,7 +171,6 @@ export default function Builder() {
                     <button className="btn btn-primary btn-sm" onClick={addField}><IconPlus /> Add</button>
                   </div>
                 </div>
-
                 {form.fields.length === 0 ? (
                   <div className="empty" style={{ padding: '28px 0' }}>
                     <div className="empty-icon">◈</div>
@@ -180,9 +181,7 @@ export default function Builder() {
                     <div className="field-item-head">
                       <span className="drag-handle">⠿</span>
                       <span className="field-type-tag">{FIELD_TYPES.find(t => t.value === f.type)?.label}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text3)', flex: 1, fontFamily: 'var(--font-mono)' }}>
-                        {f.label || 'unlabeled'}
-                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--text3)', flex: 1, fontFamily: 'var(--font-mono)' }}>{f.label || 'unlabeled'}</span>
                       <button className="btn-icon btn-danger" onClick={() => removeField(f.id)}><IconTrash /></button>
                     </div>
                     <div className="field-row">
@@ -230,32 +229,97 @@ export default function Builder() {
           {/* ── Step 3: AI ── */}
           {step === 3 && (
             <div className="fade-up">
+              {/* ── AI TOGGLE ── */}
               <div className="card" style={{ marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                  <div className="eyebrow">AI Engine</div>
-                  <span className="badge badge-ai"><IconSparkle /> Gemini 1.5</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div className="eyebrow" style={{ marginBottom: 4 }}>AI Engine</div>
+                    <div style={{ fontSize: 13, color: 'var(--text2)' }}>
+                      {aiEnabled
+                        ? 'Gemini AI will analyse every submission and show results instantly.'
+                        : 'AI is off — respondents will be redirected after submission.'}
+                    </div>
+                  </div>
+                  {/* Toggle switch */}
+                  <div
+                    onClick={() => save({ ai_enabled: !aiEnabled })}
+                    style={{
+                      width: 48, height: 26, borderRadius: 13,
+                      background: aiEnabled ? 'var(--orange)' : 'var(--border2)',
+                      cursor: 'pointer', position: 'relative',
+                      transition: 'background 0.2s', flexShrink: 0,
+                      border: '1px solid ' + (aiEnabled ? 'var(--orange-dk)' : 'var(--border2)'),
+                    }}
+                    role="switch" aria-checked={aiEnabled}
+                  >
+                    <div style={{
+                      position: 'absolute',
+                      top: 3, left: aiEnabled ? 24 : 3,
+                      width: 18, height: 18, borderRadius: '50%',
+                      background: 'white',
+                      transition: 'left 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    }} />
+                  </div>
                 </div>
-                <div className="field-group" style={{ marginBottom: 0 }}>
-                  <label className="field-label">Analysis Instructions</label>
-                  <textarea className="field-input" style={{ minHeight: 160 }}
-                    defaultValue={form.ai_instructions}
-                    placeholder="e.g. Act as a senior business consultant. Analyze the respondent's goals and budget. Suggest exactly 3 actionable growth strategies with a title, rationale, and first step each. Be specific, concise, and avoid generic advice."
-                    onBlur={e => save({ ai_instructions: e.target.value })}
-                    onChange={e => setForm(f => f ? { ...f, ai_instructions: e.target.value } : f)}
-                  />
-                  <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, lineHeight: 1.7 }}>
-                    This prompt guides Gemini AI for every submission. Specify role, output format, and tone.
+
+                {/* AI status badge */}
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className={`badge ${aiEnabled ? 'badge-ai' : 'badge-draft'}`}>
+                    {aiEnabled ? <><IconSparkle /> Gemini 1.5 Flash — ON</> : '○ AI Engine — OFF'}
+                  </span>
+                </div>
+              </div>
+
+              {/* ── AI INSTRUCTIONS (only when ON) ── */}
+              {aiEnabled && (
+                <div className="card" style={{ marginBottom: 14 }}>
+                  <div className="field-group" style={{ marginBottom: 0 }}>
+                    <label className="field-label">Analysis Instructions</label>
+                    <textarea className="field-input" style={{ minHeight: 140 }}
+                      defaultValue={form.ai_instructions}
+                      placeholder="e.g. Act as a senior business consultant. Analyze the respondent's goals and budget. Suggest exactly 3 actionable growth strategies with a title, rationale, and first step each. Be specific, concise, and avoid generic advice."
+                      onBlur={e => save({ ai_instructions: e.target.value })}
+                      onChange={e => setForm(f => f ? { ...f, ai_instructions: e.target.value } : f)}
+                    />
+                    <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, lineHeight: 1.7 }}>
+                      This prompt guides Gemini AI for every submission. Specify role, output format, and tone.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ── REDIRECT URL (only when OFF) ── */}
+              {!aiEnabled && (
+                <div className="card" style={{ marginBottom: 14, borderLeft: '3px solid var(--orange)' }}>
+                  <div className="eyebrow" style={{ marginBottom: 12 }}>Redirect After Submission</div>
+                  <div className="field-group" style={{ marginBottom: 0 }}>
+                    <label className="field-label">Redirect URL <span className="req">*</span></label>
+                    <input className="field-input"
+                      defaultValue={form.redirect_url}
+                      placeholder="https://yoursite.com/thank-you"
+                      onBlur={e => save({ redirect_url: e.target.value })}
+                      onChange={e => setForm(f => f ? { ...f, redirect_url: e.target.value } : f)}
+                    />
+                    <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, lineHeight: 1.7 }}>
+                      After submitting the form, respondents will be redirected to this URL. Make sure it starts with https://
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tips card (only when AI is ON) */}
+              {aiEnabled && (
+                <div className="card" style={{ background: 'var(--off-white)', borderLeft: '3px solid var(--orange)', marginBottom: 14 }}>
+                  <p style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.85 }}>
+                    <strong style={{ fontFamily: 'var(--font-head)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text)' }}>Tips</strong><br />
+                    • Role: <code>"Act as a marketing strategist…"</code><br />
+                    • Output: <code>"Give exactly 3 bullet-point recommendations…"</code><br />
+                    • Tone: <code>"Be concise, direct, avoid jargon…"</code>
                   </p>
                 </div>
-              </div>
-              <div className="card" style={{ background: 'var(--off-white)', borderLeft: '3px solid var(--orange)', marginBottom: 14 }}>
-                <p style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.85 }}>
-                  <strong style={{ fontFamily: 'var(--font-head)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text)' }}>Tips</strong><br />
-                  • Role: <code>"Act as a marketing strategist…"</code><br />
-                  • Output: <code>"Give exactly 3 bullet-point recommendations…"</code><br />
-                  • Tone: <code>"Be concise, direct, avoid jargon…"</code>
-                </p>
-              </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button className="btn btn-ghost" onClick={() => setStep(2)}><IconBack /> Back</button>
                 <button className="btn btn-primary" onClick={() => setStep(4)}>Review & Publish <IconArrow /></button>
@@ -275,14 +339,32 @@ export default function Builder() {
                 <div className="meta-grid">
                   <div className="meta-cell"><div className="meta-label">Fields</div><div className="meta-value">{form.fields.length}</div></div>
                   <div className="meta-cell"><div className="meta-label">Required</div><div className="meta-value">{form.fields.filter(f => f.required).length}</div></div>
-                  <div className="meta-cell"><div className="meta-label">AI</div><div className="meta-value" style={{ fontSize: 13, paddingTop: 4 }}>{form.ai_instructions ? '✓ Set' : '—'}</div></div>
+                  <div className="meta-cell">
+                    <div className="meta-label">AI Engine</div>
+                    <div className="meta-value" style={{ fontSize: 13, paddingTop: 4, color: aiEnabled ? 'var(--orange)' : 'var(--text3)' }}>
+                      {aiEnabled ? '✓ On' : '○ Off'}
+                    </div>
+                  </div>
                 </div>
+                {!aiEnabled && form.redirect_url && (
+                  <div style={{ marginTop: 12, padding: '8px 12px', background: 'var(--off-white)', borderRadius: 'var(--r)', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text2)' }}>
+                    Redirect → {form.redirect_url}
+                  </div>
+                )}
               </div>
 
               {form.fields.length === 0 && (
                 <div className="card" style={{ background: '#fef8e8', borderColor: '#e8d89a', borderLeft: '3px solid var(--amber)', marginBottom: 14 }}>
                   <p style={{ fontSize: 11, color: 'var(--amber)', fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     ⚠ Add at least one field before publishing
+                  </p>
+                </div>
+              )}
+
+              {!aiEnabled && !form.redirect_url && (
+                <div className="card" style={{ background: '#fef8e8', borderColor: '#e8d89a', borderLeft: '3px solid var(--amber)', marginBottom: 14 }}>
+                  <p style={{ fontSize: 11, color: 'var(--amber)', fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    ⚠ AI is off but no redirect URL is set. Add one in AI Setup.
                   </p>
                 </div>
               )}
@@ -335,13 +417,13 @@ function ChoiceEditor({ choices, onAdd, onRemove }: { choices: string[]; onAdd: 
       </div>
       <div>{choices.map(c => (
         <span key={c} style={{
-          display:'inline-flex',alignItems:'center',gap:5,
-          padding:'4px 10px',background:'var(--orange-lt)',
-          border:'1px solid rgba(232,97,42,0.2)',borderRadius:'var(--r)',
-          fontSize:12,margin:3,color:'var(--orange)',fontFamily:'var(--font-mono)'
+          display:'inline-flex', alignItems:'center', gap:5,
+          padding:'4px 10px', background:'var(--orange-lt)',
+          border:'1px solid rgba(232,97,42,0.2)', borderRadius:'var(--r)',
+          fontSize:12, margin:3, color:'var(--orange)', fontFamily:'var(--font-mono)'
         }}>
           {c}
-          <button onClick={() => onRemove(c)} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--orange-dk)',fontSize:14,padding:0,lineHeight:1 }}>×</button>
+          <button onClick={() => onRemove(c)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--orange-dk)', fontSize:14, padding:0, lineHeight:1 }}>×</button>
         </span>
       ))}</div>
     </div>

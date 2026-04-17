@@ -13,16 +13,17 @@ export default function FillForm() {
   const [notFound, setNotFound] = useState(false)
   const [fillData, setFillData] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [analyzing, setAnalyzing] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState('')
 
   useEffect(() => { if (id) loadForm(id) }, [id])
 
   async function loadForm(fid: string) {
-    const { data } = await supabase.from('strat_forms').select('*').eq('id', fid).eq('published', true).single()
+    const { data } = await supabase
+      .from('strat_forms').select('*').eq('id', fid).eq('published', true).single()
     if (!data) { setNotFound(true); return }
-    setForm(data)
+    setForm({ ai_enabled: true, redirect_url: '', ...data })
   }
 
   function updateField(fieldId: string, value: string) {
@@ -32,28 +33,62 @@ export default function FillForm() {
 
   async function handleSubmit() {
     if (!form) return
+
+    // Validate required fields
     const newErrors: Record<string, string> = {}
-    form.fields.forEach(f => { if (f.required && !fillData[f.id]?.trim()) newErrors[f.id] = 'Required' })
+    form.fields.forEach(f => {
+      if (f.required && !fillData[f.id]?.trim()) newErrors[f.id] = 'This field is required'
+    })
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
-    setAnalyzing(true); setSubmitError('')
+
+    setSubmitting(true)
+    setSubmitError('')
+
+    const aiEnabled = form.ai_enabled !== false
+    const respondentEmail = fillData[form.fields.find(f => f.type === 'email')?.id || ''] || ''
+
     try {
-      const fields = form.fields.map(f => ({ label: f.label || f.type, value: fillData[f.id] || '' }))
-      const report = await analyzeWithGemini(form.title, fields, form.ai_instructions)
-      const respondentEmail = fillData[form.fields.find(f => f.type === 'email')?.id || ''] || ''
-      await supabase.from('strat_responses').insert({
-        form_id: form.id, form_title: form.title,
-        response_data: fillData, ai_report: report, respondent_email: respondentEmail
-      })
-      setResult(report)
-    } catch (e) {
-      setSubmitError('Analysis failed. Please try again.')
+      if (aiEnabled) {
+        // ── AI MODE: analyse then show result ──────────────────────────────
+        const fields = form.fields.map(f => ({ label: f.label || f.type, value: fillData[f.id] || '' }))
+        const report = await analyzeWithGemini(form.title, fields, form.ai_instructions)
+
+        await supabase.from('strat_responses').insert({
+          form_id: form.id, form_title: form.title,
+          response_data: fillData, ai_report: report,
+          respondent_email: respondentEmail
+        })
+        setResult(report)
+      } else {
+        // ── NO-AI MODE: save response then redirect ────────────────────────
+        await supabase.from('strat_responses').insert({
+          form_id: form.id, form_title: form.title,
+          response_data: fillData, ai_report: '',
+          respondent_email: respondentEmail
+        })
+
+        const redirectUrl = form.redirect_url?.trim()
+        if (redirectUrl) {
+          // Give a brief moment for the DB write before navigating
+          setTimeout(() => { window.location.href = redirectUrl }, 400)
+        } else {
+          // Fallback: show simple thank-you if no redirect URL configured
+          setResult('__no_ai__')
+        }
+      }
+    } catch (err: any) {
+      console.error('Submission error:', err)
+      setSubmitError(err?.message || 'Something went wrong. Please try again.')
     }
-    setAnalyzing(false)
+
+    setSubmitting(false)
   }
 
   const filled = form ? Object.keys(fillData).filter(k => fillData[k]).length : 0
   const pct = form && form.fields.length > 0 ? Math.min(100, Math.round(filled / form.fields.length * 100)) : 0
+  const aiEnabled = form ? form.ai_enabled !== false : true
 
+  // ── NOT FOUND ────────────────────────────────────────────────────────────────
   if (notFound) return (
     <div className="app"><Topbar />
       <div className="main">
@@ -67,6 +102,7 @@ export default function FillForm() {
     </div>
   )
 
+  // ── LOADING ──────────────────────────────────────────────────────────────────
   if (!form) return (
     <div className="app"><Topbar />
       <div className="main" style={{ display:'flex', alignItems:'center', gap:10, color:'var(--text3)' }}>
@@ -75,18 +111,17 @@ export default function FillForm() {
     </div>
   )
 
-  /* ── Result view ── */
-  if (result) return (
+  // ── AI RESULT ────────────────────────────────────────────────────────────────
+  if (result && result !== '__no_ai__') return (
     <div className="app">
       <Topbar right={<span className="badge badge-ai"><IconSparkle /> Gemini AI</span>} />
       <div className="main">
         <div className="form-view fade-up">
-          {/* Success header */}
           <div style={{ textAlign:'center', padding:'24px 0 32px' }}>
             <div style={{
               width:48, height:48, background:'var(--orange)', borderRadius:8,
               display:'flex', alignItems:'center', justifyContent:'center',
-              margin:'0 auto 14px', fontSize:20
+              margin:'0 auto 14px', fontSize:20, color:'white'
             }}>✦</div>
             <div className="eyebrow" style={{ marginBottom:6 }}>Analysis Complete</div>
             <h2 style={{ fontFamily:'var(--font-head)', fontSize:20, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.02em', marginBottom:6 }}>
@@ -97,7 +132,7 @@ export default function FillForm() {
 
           <div className="result-card">
             <div className="result-header">
-              <span className="badge badge-ai"><IconSparkle /> Gemini 1.5 Flash</span>
+              <span className="badge badge-ai"><IconSparkle /> Gemini AI Analysis</span>
               <span style={{ fontSize:11, color:'var(--text3)', marginLeft:'auto', fontFamily:'var(--font-mono)' }}>
                 {new Date().toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
               </span>
@@ -119,8 +154,30 @@ export default function FillForm() {
     </div>
   )
 
-  /* ── Analyzing overlay ── */
-  if (analyzing) return (
+  // ── NO-AI THANK YOU (fallback when no redirect URL set) ──────────────────────
+  if (result === '__no_ai__') return (
+    <div className="app"><Topbar />
+      <div className="main">
+        <div className="form-view fade-up" style={{ textAlign:'center', paddingTop:60 }}>
+          <div style={{
+            width:56, height:56, background:'var(--orange)', borderRadius:10,
+            display:'flex', alignItems:'center', justifyContent:'center',
+            margin:'0 auto 18px', fontSize:24, color:'white'
+          }}>✓</div>
+          <div className="eyebrow" style={{ marginBottom:8 }}>Submitted</div>
+          <h2 style={{ fontFamily:'var(--font-head)', fontSize:20, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.03em', marginBottom:10 }}>
+            Thank You
+          </h2>
+          <p style={{ color:'var(--text2)', fontSize:14, lineHeight:1.65 }}>
+            Your response has been recorded successfully.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── ANALYSING OVERLAY ────────────────────────────────────────────────────────
+  if (submitting && aiEnabled) return (
     <div className="app"><Topbar />
       <div className="main">
         <div className="form-view" style={{ textAlign:'center', paddingTop:80 }}>
@@ -141,29 +198,68 @@ export default function FillForm() {
     </div>
   )
 
-  /* ── Fill form ── */
+  // ── FILL FORM ────────────────────────────────────────────────────────────────
   return (
     <div className="app">
-      <Topbar right={<span className="badge badge-ai"><IconSparkle /> AI-Powered</span>} />
+      <Topbar right={
+        aiEnabled
+          ? <span className="badge badge-ai"><IconSparkle /> AI-Powered</span>
+          : <span className="badge badge-draft" style={{ fontSize:10 }}>Form</span>
+      } />
       <div className="main">
         <div className="form-view fade-up">
           <div className="progress-bar"><div className="progress-fill" style={{ width:`${pct}%` }} /></div>
+
           <div className="form-view-header">
             <h1 className="form-view-title">{form.title}</h1>
             {form.description && <p className="form-view-desc">{form.description}</p>}
           </div>
 
           {form.fields.map(f => (
-            <FieldRenderer key={f.id} field={f} value={fillData[f.id]||''} error={errors[f.id]} onChange={v => updateField(f.id, v)} />
+            <FieldRenderer
+              key={f.id} field={f}
+              value={fillData[f.id]||''}
+              error={errors[f.id]}
+              onChange={v => updateField(f.id, v)}
+            />
           ))}
 
+          {/* Error message */}
           {submitError && (
-            <p style={{ color:'var(--danger)', fontSize:13, marginBottom:12, fontFamily:'var(--font-mono)' }}>{submitError}</p>
+            <div style={{
+              background: 'rgba(192,57,43,0.06)',
+              border: '1px solid rgba(192,57,43,0.2)',
+              borderLeft: '3px solid var(--danger)',
+              borderRadius: 'var(--r)',
+              padding: '12px 16px',
+              marginBottom: 16,
+            }}>
+              <div style={{ fontSize:12, fontFamily:'var(--font-head)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--danger)', marginBottom:4 }}>
+                Submission Error
+              </div>
+              <p style={{ color:'var(--danger)', fontSize:13, lineHeight:1.6 }}>{submitError}</p>
+              {submitError.includes('API key') && (
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
+                  style={{ fontSize:12, color:'var(--orange)', display:'block', marginTop:8, fontFamily:'var(--font-mono)' }}>
+                  → Get a new API key at aistudio.google.com/apikey
+                </a>
+              )}
+            </div>
           )}
 
           <div style={{ display:'flex', justifyContent:'flex-end', marginTop:28 }}>
-            <button className="btn btn-primary" onClick={handleSubmit} disabled={analyzing} style={{ minWidth:180 }}>
-              <IconSparkle /> Submit & Analyse
+            <button
+              className="btn btn-primary"
+              onClick={handleSubmit}
+              disabled={submitting}
+              style={{ minWidth:180 }}
+            >
+              {submitting
+                ? <><div className="spinner" style={{ width:14, height:14, borderWidth:2 }} /> Submitting…</>
+                : aiEnabled
+                  ? <><IconSparkle /> Submit & Analyse</>
+                  : '→ Submit'
+              }
             </button>
           </div>
 
@@ -180,7 +276,9 @@ export default function FillForm() {
   )
 }
 
-function FieldRenderer({ field, value, error, onChange }: { field: FormField; value: string; error?: string; onChange: (v: string) => void }) {
+function FieldRenderer({ field, value, error, onChange }: {
+  field: FormField; value: string; error?: string; onChange: (v: string) => void
+}) {
   const typeMap: Record<string, string> = { email:'email', phone:'tel', url:'url', company:'text', text:'text' }
   return (
     <div className="field-group" style={{ marginBottom: 22 }}>
@@ -188,16 +286,32 @@ function FieldRenderer({ field, value, error, onChange }: { field: FormField; va
         {field.label || 'Field'}{field.required && <span className="req"> *</span>}
       </label>
       {field.type === 'textarea' ? (
-        <textarea className="field-input" value={value} placeholder={field.placeholder} onChange={e => onChange(e.target.value)} />
+        <textarea
+          className="field-input" value={value}
+          placeholder={field.placeholder}
+          onChange={e => onChange(e.target.value)}
+        />
       ) : field.type === 'choice' ? (
-        <div>{(field.choices||[]).map(c => (
-          <div key={c} className={`choice-option ${value===c?'selected':''}`} onClick={() => onChange(c)}>
-            <input type="radio" name={`f-${field.id}`} checked={value===c} onChange={() => onChange(c)} style={{ accentColor:'var(--orange)' }} />
-            {c}
-          </div>
-        ))}</div>
+        <div>
+          {(field.choices||[]).map(c => (
+            <div key={c}
+              className={`choice-option ${value===c?'selected':''}`}
+              onClick={() => onChange(c)}
+            >
+              <input type="radio" name={`f-${field.id}`} checked={value===c}
+                onChange={() => onChange(c)} style={{ accentColor:'var(--orange)' }} />
+              {c}
+            </div>
+          ))}
+        </div>
       ) : (
-        <input className="field-input" type={typeMap[field.type]||'text'} value={value} placeholder={field.placeholder} onChange={e => onChange(e.target.value)} />
+        <input
+          className="field-input"
+          type={typeMap[field.type]||'text'}
+          value={value}
+          placeholder={field.placeholder}
+          onChange={e => onChange(e.target.value)}
+        />
       )}
       {error && <div className="inline-err">{error}</div>}
     </div>

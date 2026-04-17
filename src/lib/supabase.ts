@@ -24,6 +24,8 @@ export interface StratForm {
   fields: FormField[]
   published: boolean
   created_at: string
+  ai_enabled: boolean          // NEW: toggle AI analysis on/off
+  redirect_url: string         // NEW: URL to redirect to when AI is off
 }
 
 export interface FormResponse {

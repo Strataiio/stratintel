@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<title>AI Readiness Assessment — StratAI</title>
+<meta name="description" content="Take StratAI's 2-minute AI Readiness Assessment. 6 questions. AI-powered diagnosis.">
+<meta property="og:title" content="AI Readiness Assessment — StratAI">
+<meta property="og:description" content="6 questions. AI-powered diagnosis. Know exactly where your organisation stands before investing in AI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#1a1a24;min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.6}
+a{-webkit-tap-highlight-color:transparent}
+button{-webkit-tap-highlight-color:transparent;font-family:inherit}
+.nav{background:#fff;border-bottom:1px solid #e8e4dc;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-brand{font-family:'Syne',sans-serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#1B1464;font-weight:800;text-decoration:none}
+.nav-links{display:flex;align-items:center;gap:16px}
+.nav-link{font-size:12px;color:#4a4860;text-decoration:none}
+.nav-cta{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;background:#e85d04;color:#fff;border-radius:8px;text-decoration:none;font-weight:700}
+.page{max-width:680px;margin:0 auto;padding:36px 20px 80px}
+.scr{display:none}.scr.on{display:block}
+.land-eyebrow{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#e85d04;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-weight:700}
+.land-eyebrow::before{content:'';width:20px;height:1px;background:#e85d04;display:block;flex-shrink:0}
+.land-h1{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:#1a1a24;line-height:1.1;letter-spacing:-.03em;margin-bottom:14px}
+.land-h1 em{color:#e85d04;font-style:normal}
+.land-sub{font-size:15px;color:#4a4860;line-height:1.75;margin-bottom:28px;max-width:520px}
+.land-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:32px}
+.pill{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border:1px solid #d4cfc5;border-radius:20px;color:#8a889a;font-weight:600}
+.btn-orange{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:#e85d04;color:#fff;border-radius:8px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:none;cursor:pointer;touch-action:manipulation;min-height:48px;text-decoration:none;transition:opacity .15s}
+.btn-orange:active{opacity:.82}
+.land-fine{font-size:11px;color:#8a889a;margin-top:12px}
+.tracker{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:16px}
+.tc{border-radius:6px;padding:5px 2px;text-align:center;border:1px solid #e8e4dc;background:#f9f8f6;transition:all .2s}
+.tc-dim{font-family:'Syne',sans-serif;font-size:7px;text-transform:uppercase;letter-spacing:.06em;color:#8a889a;display:block;margin-bottom:2px;font-weight:700}
+.tc-icon{font-size:10px;display:block;color:#8a889a}
+.tc.cur{border-color:#e85d04;background:#fff4ee}.tc.cur .tc-dim,.tc.cur .tc-icon{color:#e85d04}
+.tc.ok{border-color:#15803d;background:#f0fdf4}.tc.ok .tc-dim,.tc.ok .tc-icon{color:#15803d}
+.tc.med{border-color:#b45309;background:#fffbeb}.tc.med .tc-dim,.tc.med .tc-icon{color:#b45309}
+.tc.bad{border-color:#b91c1c;background:#fef2f2}.tc.bad .tc-dim,.tc.bad .tc-icon{color:#b91c1c}
+.prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.prog-lbl{font-family:'Syne',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#e85d04;font-weight:700}
+.prog-cnt{font-size:11px;color:#8a889a}
+.prog-track{height:2px;background:#e8e4dc;border-radius:1px;overflow:hidden;margin-bottom:18px}
+.prog-fill{height:100%;border-radius:1px;background:#e85d04;transition:width .4s ease}
+.qcard{background:#fff;border:1px solid #e8e4dc;border-radius:12px;padding:22px;margin-bottom:12px}
+.q-dim{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#e85d04;margin-bottom:7px;font-weight:700}
+.q-title{font-size:17px;font-weight:600;color:#1a1a24;line-height:1.4;margin-bottom:7px}
+.q-sub{font-size:12px;color:#4a4860;line-height:1.7;margin-bottom:16px}
+.qdiv{height:1px;background:#e8e4dc;margin-bottom:16px}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{padding:13px 15px;border:1px solid #e8e4dc;border-radius:9px;cursor:pointer;font-size:13px;color:#4a4860;background:#fff;text-align:left;transition:all .12s;line-height:1.55;display:flex;align-items:flex-start;gap:11px;touch-action:manipulation;min-height:48px;width:100%}
+.opt:hover{border-color:#ffd4b8;background:#fff4ee}
+.opt.sel{border-color:#e85d04;background:#fff4ee;color:#1a1a24}
+.odot{width:17px;height:17px;border-radius:50%;border:1.5px solid #d4cfc5;flex-shrink:0;margin-top:2px;position:relative;transition:all .12s;min-width:17px}
+.opt.sel .odot{background:#e85d04;border-color:#e85d04}
+.opt.sel .odot::after{content:'';width:6px;height:6px;border-radius:50%;background:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:block}
+.inp-field{width:100%;padding:13px 15px;border:1px solid #e8e4dc;border-radius:9px;font-size:13px;color:#1a1a24;font-family:'DM Sans',sans-serif;background:#fff;outline:none;transition:border-color .15s}
+.inp-field:focus{border-color:#e85d04}
+.inp-field::placeholder{color:#8a889a}
+.qnav{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.btn-back{font-size:12px;color:#8a889a;background:none;border:none;cursor:pointer;padding:8px 0;min-height:44px;display:flex;align-items:center;font-family:inherit}
+.btn-next{padding:11px 22px;border-radius:8px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border:none;background:#e85d04;color:#fff;touch-action:manipulation;min-height:48px;transition:opacity .12s}
+.btn-next:disabled{opacity:.25;cursor:not-allowed}
+.btn-next:active:not(:disabled){opacity:.8}
+.load-wrap{text-align:center;padding:56px 16px}
+.spin{width:42px;height:42px;border:2px solid #e8e4dc;border-top-color:#e85d04;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 24px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-badge{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#e85d04;border:1px solid #ffd4b8;border-radius:20px;padding:4px 14px;display:inline-block;margin-bottom:16px;font-weight:700}
+.load-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:#1a1a24;margin-bottom:7px}
+.load-sub{font-size:12px;color:#4a4860;margin-bottom:26px;line-height:1.7}
+.load-steps{display:flex;flex-direction:column;gap:6px;text-align:left;max-width:320px;margin:0 auto}
+.lstep{font-size:10px;letter-spacing:.04em;color:#8a889a;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;transition:all .3s}
+.lstep.active{color:#e85d04;background:#fff4ee;font-weight:600}
+.lstep.done{color:#15803d}
+.lsdot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.rcard{background:#fff;border:1px solid #e8e4dc;border-radius:12px;padding:22px;margin-bottom:14px}
+.rc-lbl{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8a889a;margin-bottom:16px;font-weight:700}
+.score-hero{display:flex;align-items:center;gap:16px}
+.big-score{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:#1a1a24;letter-spacing:-.04em;line-height:1;flex-shrink:0}
+.score-verdict{font-size:16px;font-weight:600;color:#1a1a24;margin-bottom:4px}
+.score-sub{font-size:13px;color:#4a4860;line-height:1.55}
+.sbar{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.sbar:last-child{margin-bottom:0}
+.sbar-lbl{font-size:11px;color:#4a4860;min-width:85px}
+.sbar-track{flex:1;height:7px;background:#f2f0ec;border-radius:4px;overflow:hidden}
+.sbar-fill{height:100%;border-radius:4px;transition:width .7s ease}
+.sbar-val{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;min-width:26px;text-align:right}
+.ai-report{background:#f9f8f6;border-radius:8px;padding:18px;font-size:13px;color:#4a4860;line-height:1.8;white-space:pre-wrap;word-break:break-word;border:1px solid #e8e4dc}
+.risk-list{display:flex;flex-direction:column;gap:12px}
+.risk-item{border-radius:9px;overflow:hidden;border:1px solid #e8e4dc}
+.ri-head{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;gap:10px}
+.ri-name{font-size:13px;font-weight:600;color:#1a1a24;flex:1}
+.ri-badge{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.badge-low{background:#f0fdf4;color:#15803d;border:1px solid #86efac}
+.badge-med{background:#fffbeb;color:#b45309;border:1px solid #fcd34d}
+.badge-high{background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5}
+.ri-body{padding:13px 15px;background:#fff}
+.ri-what{font-size:13px;color:#4a4860;line-height:1.7;margin-bottom:11px}
+.ri-action{display:flex;align-items:flex-start;gap:9px;background:#fff4ee;border-radius:6px;padding:11px 13px}
+.ri-action-label{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e85d04;flex-shrink:0;margin-top:2px;min-width:60px}
+.ri-action-text{font-size:12px;color:#1a1a24;line-height:1.65;font-weight:500}
+.philosophy{background:#1B1464;border-radius:12px;padding:26px;margin-bottom:14px;color:#fff}
+.ph-label{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8fa0d0;margin-bottom:14px;font-weight:700}
+.ph-body{font-size:14px;line-height:1.8;color:rgba(255,255,255,.82)}
+.ph-body strong{color:#fff}
+.cta-block{background:#f9f8f6;border:1px solid #e8e4dc;border-radius:12px;padding:26px;margin-bottom:14px}
+.cta-offer-tag{display:inline-flex;align-items:center;gap:6px;background:#fff4ee;border:1px solid #ffd4b8;border-radius:20px;padding:4px 13px;font-family:'Syne',sans-serif;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#e85d04;font-weight:700;margin-bottom:18px}
+.cta-title{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;color:#1a1a24;line-height:1.2;letter-spacing:-.02em;margin-bottom:9px}
+.cta-desc{font-size:13px;color:#4a4860;line-height:1.75;margin-bottom:20px}
+.cta-steps{display:flex;flex-direction:column;gap:9px;margin-bottom:22px}
+.cta-step{display:flex;align-items:flex-start;gap:11px}
+.cta-step-num{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;color:#e85d04;min-width:18px;margin-top:3px}
+.cta-step-text{font-size:13px;color:#4a4860;line-height:1.65}
+.team-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+.team-card{background:#fff;border:1px solid #e8e4dc;border-radius:9px;padding:15px}
+.team-avatar{width:44px;height:44px;border-radius:50%;background:#f2f0ec;border:2px solid #d4cfc5;margin-bottom:9px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#1B1464}
+.team-name{font-size:13px;font-weight:600;color:#1a1a24;margin-bottom:2px}
+.team-title{font-family:'Syne',sans-serif;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:#e85d04;margin-bottom:7px;font-weight:700}
+.team-bio{font-size:11px;color:#4a4860;line-height:1.6}
+.cta-btn-wrap{display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+.cta-fine{font-size:11px;color:#8a889a;line-height:1.6;font-style:italic}
+.cta-fine a{color:#e85d04;text-decoration:none}
+.btn-restart{width:100%;margin-top:8px;padding:11px;background:none;border:1px solid #e8e4dc;border-radius:8px;font-family:'Syne',sans-serif;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#8a889a;cursor:pointer;touch-action:manipulation;min-height:44px;transition:all .12s;font-weight:600}
+.btn-restart:hover{border-color:#d4cfc5;color:#4a4860}
+footer{background:#fff;border-top:1px solid #e8e4dc;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.foot-brand{font-family:'Syne',sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#1B1464;font-weight:800}
+.foot-note{font-size:10px;color:#8a889a}
+@media(max-width:520px){
+  .nav-links .nav-link{display:none}
+  .page{padding:22px 16px 80px}
+  .land-h1{font-size:27px}
+  .team-row{grid-template-columns:1fr}
+  .cta-btn-wrap{align-items:stretch}
+  .btn-orange{justify-content:center}
+  footer{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:360px){.land-h1{font-size:23px}.big-score{font-size:38px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="https://stratai.io" class="nav-brand">StratAI</a>
+  <div class="nav-links">
+    <a href="https://stratai.io/services" class="nav-link">Services</a>
+    <a href="https://stratai.io/case-studies" class="nav-link">Case Studies</a>
+    <a href="https://stratai.io/knowledge-hub" class="nav-link">Knowledge Hub</a>
+    <a href="https://stratai.io/contact" class="nav-cta">Get Started</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- LANDING -->
+  <div class="scr on" id="s-land">
+    <div class="land-eyebrow">Knowledge Hub &nbsp;&middot;&nbsp; Free Tool</div>
+    <h1 class="land-h1">Take our 2-minute<br><em>AI Readiness</em> Assessment</h1>
+    <p class="land-sub">6 questions. AI-powered diagnosis. Know exactly where your organisation stands — and which specific failure mode you are most at risk of — before investing in AI.</p>
+    <div class="land-pills">
+      <span class="pill">6 questions</span>
+      <span class="pill">Under 2 minutes</span>
+      <span class="pill">AI-powered analysis</span>
+      <span class="pill">Lippitt-Knoster model</span>
+      <span class="pill">Instant visual result</span>
+    </div>
+    <button class="btn-orange" onclick="startQ()">Start the assessment &rarr;</button>
+    <div class="land-fine">No sign-up required &nbsp;&middot;&nbsp; Completely free</div>
+  </div>
+
+  <!-- QUESTIONS -->
+  <div class="scr" id="s-q">
+    <div class="tracker" id="tracker"></div>
+    <div class="prog-row">
+      <span class="prog-lbl" id="p-lbl">Vision</span>
+      <span class="prog-cnt" id="p-cnt">1 / 6</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="pbar" style="width:0%"></div></div>
+    <div id="q-slot"></div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="scr" id="s-load">
+    <div class="load-wrap">
+      <div class="spin"></div>
+      <div class="load-badge">StratAI AI Engine</div>
+      <div class="load-title">Analysing your AI readiness</div>
+      <div class="load-sub">Using the Lippitt-Knoster Model for Managing Complex Change<br>Results in approximately 30 seconds</div>
+      <div class="load-steps">
+        <div class="lstep" id="st0"><span class="lsdot"></span>Mapping responses to change dimensions</div>
+        <div class="lstep" id="st1"><span class="lsdot"></span>Identifying failure mode risks</div>
+        <div class="lstep" id="st2"><span class="lsdot"></span>Scoring readiness across 6 layers</div>
+        <div class="lstep" id="st3"><span class="lsdot"></span>Generating personalised risk breakdown</div>
+        <div class="lstep" id="st4"><span class="lsdot"></span>Building your readiness report</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="scr" id="s-result">
+    <div class="rcard">
+      <div class="rc-lbl">Your AI readiness score</div>
+      <div class="score-hero">
+        <div class="big-score" id="v-score"></div>
+        <div>
+          <div class="score-verdict" id="v-verdict"></div>
+          <div class="score-sub" id="v-sub"></div>
+        </div>
+      </div>
+    </div>
+    <div class="rcard">
+      <div class="rc-lbl">Score by dimension</div>
+      <div id="sbars"></div>
+    </div>
+    <div class="rcard">
+      <div class="rc-lbl">AI-powered readiness analysis</div>
+      <div class="ai-report" id="ai-report-text">Generating your personalised analysis…</div>
+    </div>
+    <div class="rcard">
+      <div class="rc-lbl">Risk breakdown &nbsp;&middot;&nbsp; what this means for your implementation</div>
+      <div class="risk-list" id="risk-list"></div>
+    </div>
+    <div class="philosophy">
+      <div class="ph-label">Why most AI implementations fail</div>
+      <div class="ph-body">
+        AI transformation in manufacturing is navigating <strong>complex change</strong> — it requires deep domain expertise, AI technical expertise, and the expertise to manage organisational change simultaneously.<br><br>
+        In our experience, focusing on tech expertise alone is the real cause of failure. A system can be technically perfect and still be abandoned — because the people, the processes, and the management structure were never ready to absorb it.<br><br>
+        <strong>The companies that win with AI don't just find the best AI vendor. They find a partner who understands their industry, their operations, and how to move their organisation through real change.</strong>
+      </div>
+    </div>
+    <div class="cta-block">
+      <div class="cta-offer-tag">Free Offer &rarr; One-Day Audit</div>
+      <div class="cta-title">Looking for a partner who understands Manufacturing, AI, and Change Management?</div>
+      <div class="cta-desc">We offer a free one-day on-site audit of your current AI readiness — covering your data, processes, systems, and people. Within one week you receive a detailed GAP Report showing exactly what needs to be in place before any AI engagement begins.</div>
+      <div class="cta-steps">
+        <div class="cta-step"><span class="cta-step-num">01</span><span class="cta-step-text"><strong>30-minute call</strong> — we understand your business context, you understand how we work. No pitch deck.</span></div>
+        <div class="cta-step"><span class="cta-step-num">02</span><span class="cta-step-text"><strong>Free one-day on-site audit</strong> — we study your data, processes, and people across key functions.</span></div>
+        <div class="cta-step"><span class="cta-step-num">03</span><span class="cta-step-text"><strong>GAP Report in 1 week</strong> — a specific, honest assessment of your readiness and what needs to change before AI can succeed.</span></div>
+      </div>
+      <div class="rc-lbl" style="margin-bottom:10px">Who will be on the call</div>
+      <div class="team-row">
+        <div class="team-card">
+          <div class="team-avatar">PS</div>
+          <div class="team-name">Palaniappan SN</div>
+          <div class="team-title">Co-Founder &nbsp;&middot;&nbsp; StratAI</div>
+          <div class="team-bio">MBA, IIM Bangalore &nbsp;&middot;&nbsp; BE Mechanical, PSG Tech. Business strategy consultant with deep manufacturing domain expertise — from boardroom to shop floor.</div>
+        </div>
+        <div class="team-card">
+          <div class="team-avatar">HK</div>
+          <div class="team-name">Harish Kumar</div>
+          <div class="team-title">Co-Founder &nbsp;&middot;&nbsp; StratAI</div>
+          <div class="team-bio">AI systems architect and implementation lead. Builds the multi-agent systems and AI infrastructure that power every StratAI engagement.</div>
+        </div>
+      </div>
+      <div class="cta-btn-wrap">
+        <a href="https://stratai.io/contact" class="btn-orange" target="_blank" rel="noopener">&rarr; Schedule the 30-minute call</a>
+        <div class="cta-fine">Or reach us directly at <a href="mailto:harish@stratai.io">harish@stratai.io</a><br>No obligation. No proposal until we both agree there is a fit.</div>
+      </div>
+    </div>
+    <button class="btn-restart" onclick="restart()">&larr; Retake the assessment</button>
+  </div>
+</div>
+
+<footer>
+  <span class="foot-brand">StratAI</span>
+  <span class="foot-note">stratai.io &nbsp;&middot;&nbsp; Knowledge Hub</span>
+</footer>
+
+<script>
+var FORM_ID='elw36iyenfct';
+var SB_URL='https://kvykibnzksxaivdvdrdl.supabase.co';
+var SB_KEY='sb_publishable_g_f-aF5gXg-MkSg4IIQnLA_CbyxYRU9';
+var DIMS=['Vision','Consensus','Skills','Incentives','Resources','Action plan'];
+var FAILS=['Confusion','Sabotage','Anxiety','Resistance','Frustration','False starts'];
+var RISKS=[
+  {what:'Without a shared, specific vision for AI — tied to P&L outcomes — every team interprets the mandate differently. Resources get pulled in different directions. Effort dissipates before anything ships.',action:'Write one sentence that defines AI success for your business: which function, which metric, visible by when in the P&L. Get every member of the leadership team to sign off on that sentence before any vendor is engaged.'},
+  {what:'Without active buy-in at every level, those who disagree find ways around the initiative rather than through it. Middle management quietly deprioritises AI tasks. Projects stall without open opposition.',action:'Run a one-hour structured session with middle management before the engagement begins. Cover: what will change in your daily work, what will not change, and what you will be asked to do in the first 90 days. Silence is not consensus.'},
+  {what:'Without the right domain expertise — in your industry, your processes, your people dynamics — even technically excellent AI systems fail at adoption. Teams feel uncertain and exposed.',action:'Evaluate your AI partner using the 5-Layer Domain Test: can they describe your industry margin structure, your process pain points, and who in your organisation will resist change — before they have spent a day on your floor?'},
+  {what:'Without a genuine reason for operational teams to want AI to succeed, the system gets used by three people instead of thirty. Shop floor reverts to old habits the moment the vendor is not present.',action:'For each function AI will touch, define one specific way AI removes work nobody wanted to do. Frame it in the language of the person doing the work. Communicate that framing before go-live — not after.'},
+  {what:'The first three months of a real AI engagement produce no visible P&L output. If budget is structured as a fixed project — or if the team has no bandwidth — the engagement gets cut at month three.',action:'Secure a minimum six-month retainer commitment before any engagement begins. Identify one internal point of contact with at least four hours per week of dedicated time.'},
+  {what:'Without a structured first month — with defined diagnostic steps, named owners, and honest milestones — implementation begins with energy and stalls when the first obstacle appears.',action:'Insist that your AI partner presents a specific month-one plan before you sign anything: what they will audit, who they will interview, what they will deliver at the end of month one.'}
+];
+var QS=[
+  {id:'o7sr6ee2w9ip',dim:'Vision',q:'Does your leadership team have a clear, shared vision for what AI should achieve in your business?',sub:'Not what AI can do in general — what it will specifically achieve, in which functions, measured how, and visible when in the P&L.',opts:['Yes — specific AI goals tied to P&L outcomes, leadership fully aligned on what success looks like','Somewhat — general agreement that AI matters but no specific outcome targets or timelines yet','Not really — different leaders have different ideas about what AI should do and why','No — AI has been approved but nobody has defined what success looks like']},
+  {id:'90yt0qpjasod',dim:'Consensus',q:'Is there genuine consensus across board, middle management, and operational teams?',sub:'Consensus is not passive agreement at the top. It is active buy-in at every level that will be affected by AI implementation.',opts:['Yes — board, middle management, and shop floor all actively aligned and supportive','Mostly — board aligned but middle management and shop floor are neutral or uncertain','Partially — surface agreement at the top but visible skepticism below senior level','No — one or more stakeholder groups are actively resistant or openly skeptical']},
+  {id:'8ome7ga9va9h',dim:'Skills',q:'Does your team have the skills — or access to skills — to implement and sustain AI systems?',sub:'This includes domain knowledge of your specific processes and a partner who understands your business, not just AI technology.',opts:['Yes — strong internal capability and/or a domain-expert partner who knows our specific business deeply','Partially — some capability but gaps in either AI skills or domain expertise','Mostly no — dependent on a vendor whose understanding of our business is surface-level','No — committed to AI but no real skills internally and no trusted domain-expert partner']},
+  {id:'s9y878chk8wg',dim:'Incentives',q:'Do the people who will use AI have a genuine reason to want it to succeed?',sub:'Not just the board — middle managers, shop floor, and function heads whose daily work AI will actually change.',opts:['Yes — AI is framed as removing work nobody wanted, people can see how it helps them personally','Somewhat — leadership bought in but operational teams are neutral or uncertain','Not really — visible skepticism or passive resistance at operational levels','No — the team sees AI as a threat, active resistance at multiple levels']},
+  {id:'jha1fswvl0vq',dim:'Resources',q:'Do you have the resources — budget, data, time, bandwidth — to sustain AI for 6+ months?',sub:'The first three months produce no visible P&L output. Month four is when signals appear. Resources must cover the full arc.',opts:['Yes — retainer budget approved, data sources identified, team has real bandwidth to engage properly','Mostly — budget approved but team stretched and data siloed across multiple systems','Partially — budget limited or structured as a fixed project, data quality uncertain','No — expecting results within weeks on a tight budget with no clear data foundation']},
+  {id:'eoe6gm6x2mb1',dim:'Action plan',q:'Do you have a structured plan for how AI implementation will actually begin?',sub:'Not a high-level roadmap — a specific honest plan for month one: what happens, who owns it, what the diagnostic process looks like.',opts:['Yes — clear starting point, defined diagnostic process, realistic milestones for first 90 days','Somewhat — know roughly where to start but the first-month plan is not detailed or formally agreed','Not really — contract signed but no structured implementation plan yet','No — ready to invest but no defined starting point or process for how to begin']}
+];
+var INFO={name:'irbhbyz7vb20',company:'zpwtzes0j3gc',email:'2kowdgpz6o9m'};
+var scores=Array(6).fill(null);
+var curQ=0;
+
+function show(id){document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on')});document.getElementById(id).classList.add('on');window.scrollTo(0,0)}
+
+function buildTracker(){
+  var el=document.getElementById('tracker');
+  var inQ=document.getElementById('s-q').classList.contains('on');
+  el.innerHTML='';
+  DIMS.forEach(function(d,i){
+    var s=scores[i];var cls='tc';var icon='&circ;';
+    if(i===curQ&&inQ){cls+=' cur';icon='&bull;';}
+    else if(s!==null){if(s>=3){cls+=' ok';icon='&#10003;';}else if(s===2){cls+=' med';icon='~';}else{cls+=' bad';icon='&#10007;';}}
+    el.innerHTML+='<div class="'+cls+'"><span class="tc-dim">'+d+'</span><span class="tc-icon">'+icon+'</span></div>';
+  });
+}
+
+function renderQ(i){
+  var q=QS[i];
+  document.getElementById('p-lbl').textContent=q.dim;
+  document.getElementById('p-cnt').textContent=(i+1)+' / 6';
+  document.getElementById('pbar').style.width=Math.round(i/6*100)+'%';
+  var optsHtml=q.opts.map(function(o,j){
+    var sel=scores[i]===(3-j)?' sel':'';
+    return '<button class="opt'+sel+'" onclick="pick('+i+','+j+','+(3-j)+')"><div class="odot"></div><span>'+o+'</span></button>';
+  }).join('');
+  document.getElementById('q-slot').innerHTML=
+    '<div class="qcard"><div class="q-dim">'+q.dim+'</div><div class="q-title">'+q.q+'</div><div class="q-sub">'+q.sub+'</div><div class="qdiv"></div><div class="opts">'+optsHtml+'</div></div>'+
+    '<div class="qnav">'+
+    (i>0?'<button class="btn-back" onclick="goBack()">&larr; Back</button>':'<span></span>')+
+    '<button class="btn-next" id="btn-next"'+(scores[i]===null?' disabled':'')+' onclick="'+(i<5?'goNext()':'showContactStep()')+'">'+
+    (i<5?'Next &rarr;':'See My Result &rarr;')+'</button></div>';
+  buildTracker();
+}
+
+function pick(qi,optIdx,score){
+  scores[qi]=score;
+  document.querySelectorAll('#q-slot .opt').forEach(function(o,i){o.classList.toggle('sel',i===optIdx)});
+  document.getElementById('btn-next').disabled=false;
+  buildTracker();
+}
+
+function startQ(){show('s-q');curQ=0;renderQ(0);}
+function goNext(){if(scores[curQ]===null)return;curQ++;renderQ(curQ);}
+function goBack(){if(curQ>0){curQ--;renderQ(curQ);}}
+
+function showContactStep(){
+  document.getElementById('p-lbl').textContent='Almost done';
+  document.getElementById('p-cnt').textContent='6 / 6';
+  document.getElementById('pbar').style.width='100%';
+  document.getElementById('q-slot').innerHTML=
+    '<div class="qcard">'+
+    '<div class="q-dim">Optional</div>'+
+    '<div class="q-title">Who should we address this report to?</div>'+
+    '<div class="q-sub">Skip if you prefer to stay anonymous. Your email lets us send you a copy of your full report.</div>'+
+    '<div class="qdiv"></div>'+
+    '<div style="display:flex;flex-direction:column;gap:10px">'+
+    '<input id="inp-name" class="inp-field" placeholder="Your name" type="text" autocomplete="name">'+
+    '<input id="inp-company" class="inp-field" placeholder="Company" type="text" autocomplete="organization">'+
+    '<input id="inp-email" class="inp-field" placeholder="Email (optional)" type="email" autocomplete="email">'+
+    '</div></div>'+
+    '<div class="qnav">'+
+    '<button class="btn-back" onclick="goBack()">&larr; Back</button>'+
+    '<button class="btn-next" onclick="submitAll()">See My Result &rarr;</button>'+
+    '</div>';
+}
+
+function submitAll(){
+  show('s-load');
+  var steps=['st0','st1','st2','st3','st4'];
+  var i=0;
+  function doStep(){
+    if(i>0)document.getElementById(steps[i-1]).classList.remove('active');
+    if(i<steps.length){
+      document.getElementById(steps[i]).classList.add('active');
+      setTimeout(function(){document.getElementById(steps[i]).classList.add('done');i++;setTimeout(doStep,500);},400);
+    } else {setTimeout(runAnalysis,300);}
+  }
+  doStep();
+}
+
+function runAnalysis(){
+  var dimLines=DIMS.map(function(d,i){return d+' ('+scores[i]+'/3): '+QS[i].opts[3-scores[i]];}).join('\n');
+  var prompt='A manufacturing CXO completed an AI readiness assessment using the Lippitt-Knoster Model.\n\nTheir scores:\n'+dimLines+'\n\nProvide a structured readiness report with:\n1) OVERALL VERDICT: State Strong (14-18)/Partial (9-13)/Low (0-8) with one specific sentence\n2) DIMENSION ANALYSIS: For each of the 6 dimensions, one sentence on their risk and the specific failure mode\n3) TOP RECOMMENDATIONS: 2-3 specific, actionable next steps for their weakest dimensions\n\nBe direct, specific, practical. Write as a senior AI transformation consultant who knows manufacturing.';
+
+  var gemKey=localStorage.getItem('stratintel_gemini_key')||'';
+  var contactName=(document.getElementById('inp-name')||{value:''}).value||'';
+  var contactCompany=(document.getElementById('inp-company')||{value:''}).value||'';
+  var contactEmail=(document.getElementById('inp-email')||{value:''}).value||'';
+
+  var responseData={};
+  QS.forEach(function(q,i){responseData[q.id]=q.opts[3-scores[i]];});
+  if(contactName)responseData[INFO.name]=contactName;
+  if(contactCompany)responseData[INFO.company]=contactCompany;
+  if(contactEmail)responseData[INFO.email]=contactEmail;
+
+  var models=['gemini-2.0-flash-lite','gemini-2.0-flash','gemini-1.5-flash'];
+
+  function tryModel(idx){
+    if(!gemKey||idx>=models.length){showResults(buildFallback(),responseData,contactEmail);return;}
+    fetch('https://generativelanguage.googleapis.com/v1/models/'+models[idx]+':generateContent?key='+gemKey,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1200}})
+    }).then(function(r){return r.json()}).then(function(d){
+      var txt=d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&d.candidates[0].content.parts[0].text||'';
+      if(txt){showResults(txt,responseData,contactEmail);}else{tryModel(idx+1);}
+    }).catch(function(){tryModel(idx+1);});
+  }
+  tryModel(0);
+}
+
+function buildFallback(){
+  var total=scores.reduce(function(a,b){return a+b},0);
+  var verdict=total>=14?'Strong Readiness':total>=9?'Partial Readiness':'Low Readiness';
+  var lines=[verdict+' — Score: '+total+'/18\n'];
+  DIMS.forEach(function(d,i){
+    var s=scores[i];var level=s>=3?'Low Risk':s===2?'Medium Risk':'High Risk';
+    lines.push(d+': '+level+' of '+FAILS[i]+' ('+s+'/3)');
+  });
+  var weak=scores.map(function(s,i){return{i:i,s:s}}).filter(function(x){return x.s<=1});
+  if(weak.length){lines.push('\nPriority Recommendations:');weak.forEach(function(w){lines.push('• '+DIMS[w.i]+': '+RISKS[w.i].action);});}
+  return lines.join('\n');
+}
+
+function showResults(reportText,responseData,respondentEmail){
+  fetch(SB_URL+'/rest/v1/strat_responses',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'},
+    body:JSON.stringify({form_id:FORM_ID,form_title:'AI Readiness Assessment',response_data:responseData,ai_report:reportText,respondent_email:respondentEmail||''})
+  }).catch(function(){});
+
+  var total=scores.reduce(function(a,b){return a+b},0);
+  var pct=Math.round(total/18*100);
+  document.getElementById('v-score').textContent=total+'/18';
+  var verdict,sub,vc;
+  if(pct>=78){verdict='Strong Readiness';sub='Foundation for AI success is in place.';vc='#15803d';}
+  else if(pct>=50){verdict='Partial Readiness';sub='Gaps exist that will produce predictable failure modes.';vc='#b45309';}
+  else{verdict='Low Readiness';sub='Critical conditions for AI success are missing.';vc='#b91c1c';}
+  var vEl=document.getElementById('v-verdict');vEl.textContent=verdict;vEl.style.color=vc;
+  document.getElementById('v-sub').textContent=sub;
+
+  var barsEl=document.getElementById('sbars');barsEl.innerHTML='';
+  scores.forEach(function(s,i){
+    var w=Math.round(s/3*100);var col=s>=3?'#15803d':s===2?'#b45309':'#b91c1c';
+    barsEl.innerHTML+='<div class="sbar"><span class="sbar-lbl">'+DIMS[i]+'</span><div class="sbar-track"><div class="sbar-fill" style="width:'+w+'%;background:'+col+'"></div></div><span class="sbar-val" style="color:'+col+'">'+s+'/3</span></div>';
+  });
+
+  document.getElementById('ai-report-text').textContent=reportText;
+
+  var rl=document.getElementById('risk-list');rl.innerHTML='';
+  scores.forEach(function(s,i){
+    var level=s>=3?'low':s===2?'medium':'high';
+    var info=RISKS[i];
+    var bc=level==='low'?'#15803d':level==='medium'?'#d97706':'#b91c1c';
+    var hbg=level==='low'?'#f0fdf4':level==='medium'?'#fffbeb':'#fef2f2';
+    var bdg=level==='low'?'badge-low':level==='medium'?'badge-med':'badge-high';
+    var cap=level.charAt(0).toUpperCase()+level.slice(1);
+    rl.innerHTML+='<div class="risk-item" style="border-left:3px solid '+bc+'"><div class="ri-head" style="background:'+hbg+'"><span class="ri-name">'+DIMS[i]+' &mdash; Risk of '+FAILS[i]+'</span><span class="ri-badge '+bdg+'">'+cap+' Risk</span></div><div class="ri-body"><div class="ri-what">'+info.what+'</div><div class="ri-action"><span class="ri-action-label">What to do</span><span class="ri-action-text">'+info.action+'</span></div></div></div>';
+  });
+
+  show('s-result');
+}
+
+function restart(){scores=Array(6).fill(null);curQ=0;show('s-land');}
+</script>
+</body>
+</html>
